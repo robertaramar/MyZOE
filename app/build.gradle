@@ -16,6 +16,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
 }
 
 dependencies {
@@ -42,4 +46,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
+    implementation "com.mikepenz:aboutlibraries:6.2.3"
 }

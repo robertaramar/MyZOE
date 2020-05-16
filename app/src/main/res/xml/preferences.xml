@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/pref_category_units">
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="units_distance"
+            android:summaryOff="@string/pref_unit_using_kilometers"
+            android:summaryOn="@string/pref_unit_using_miles"
+            android:switchTextOff="@string/pref_unit_kilometer"
+            android:switchTextOn="@string/pref_unit_miles"
+            android:title="@string/pref_unit_distance" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="units_temperature"
+            android:summaryOff="@string/pref_unit_using_celcius"
+            android:summaryOn="@string/pref_unit_using_fahrenheit"
+            android:switchTextOff="@string/pref_unit_celsius"
+            android:switchTextOn="@string/pref_unit_fahrenheit"
+            android:title="@string/pref_unit_temperature" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_category_api">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="api_cockpit"
+            android:summaryOff="@string/pref_api_using_v1"
+            android:summaryOn="@string/pref_api_using_v2"
+            android:switchTextOff="@string/pref_api_v1"
+            android:switchTextOn="@string/pref_api_v2"
+            android:title="@string/pref_api_cockpit" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="api_battery"
+            android:summaryOff="@string/pref_api_using_v1"
+            android:summaryOn="@string/pref_api_using_v2"
+            android:switchTextOff="@string/pref_api_v1"
+            android:switchTextOn="@string/pref_api_v2"
+            android:title="@string/pref_api_battery" />
+    </PreferenceCategory>
+</PreferenceScreen>

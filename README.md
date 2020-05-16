@@ -9,4 +9,9 @@ Here are some example screens:
 ![MyZOE-Position.png](stuff/MyZOE-Position_small.png)
 ![MyZOE-Login.png](stuff/MyZOE-Login_small.png)
 
-There is a Telegram channel for discussion http://t.me/MeineZOE
+## Contribute:
+
+ * **Translation**: If you want to help translate MyZOE into your language head over to the [Crowdin project](https://crowdin.com/project/myzoe).
+ * **Bug reports and feature requests**: You can report bugs and request features in the [Issue tracker](https://github.com/robertaramar/MyZOE/issues) on GitHub.
+ * **Discussion and support**:
+   - Telegram group [@MeineZOE](https://t.me/MeineZOE) (if you just want important updates you can mute the group so you only get notified about pinned messages)

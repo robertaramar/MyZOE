@@ -6,6 +6,19 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorGithub">@color/github_dark</item>
+        <item name="cardStyle">@style/CardViewStyle</item>
+        <item name="dialogTheme">@style/DialogTheme</item>
+
+        <item name="about_libraries_card">@color/cardview_light_background</item>
+        <item name="about_libraries_title_openSource">@color/about_libraries_text_openSource</item>
+        <item name="about_libraries_text_openSource">@color/about_libraries_text_openSource</item>
+        <item name="about_libraries_dividerDark_openSource">
+            @color/about_libraries_dividerDark_openSource
+        </item>
+        <item name="about_libraries_dividerLight_openSource">
+            @color/about_libraries_dividerLight_openSource
+        </item>
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -17,4 +30,14 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <attr name="cardStyle" format="reference" />
+    <attr name="colorGithub" format="reference" />
+
+    <style name="CardViewStyle" parent="CardView">
+        <item name="contentPadding">@dimen/activity_margin</item>
+    </style>
+
+    <style name="DialogTheme" parent="Theme.AppCompat.Light.Dialog.MinWidth">
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
 </resources>

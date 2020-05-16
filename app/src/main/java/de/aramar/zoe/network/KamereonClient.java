@@ -3,12 +3,6 @@ package de.aramar.zoe.network;
 import android.app.Application;
 import android.util.Log;
 
-import androidx.annotation.MainThread;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
-
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -17,6 +11,11 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
 import de.aramar.zoe.data.kamereon.cockpit.Cockpit;
 import de.aramar.zoe.data.kamereon.location.Location;
@@ -382,7 +381,7 @@ public class KamereonClient {
                     .getToken()
                     .getAccessToken());
             String url = MessageFormat.format(
-                    "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v2/cars/{2}/cockpit?country={3}",
+                    "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/cockpit?country={3}",
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()

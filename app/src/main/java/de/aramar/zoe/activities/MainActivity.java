@@ -1,22 +1,22 @@
-package de.aramar.zoe;
+package de.aramar.zoe.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.navigation.NavigationView;
+
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
-
-import com.google.android.material.navigation.NavigationView;
-
+import de.aramar.zoe.R;
 import de.aramar.zoe.security.LoginController;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
 
@@ -66,6 +66,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
+        int id = item.getItemId();
+        if (id == R.id.action_about) {
+            Intent aboutIntent = new Intent(this, AboutActivity.class);
+            this.startActivity(aboutIntent);
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
     }
 }
