@@ -17,6 +17,7 @@
 
     <dimen name="card_padding_without_corners">14dp</dimen>
     <dimen name="card_thumbnail_size">46dp</dimen>
+    <dimen name="toolbar_elevation">4dp</dimen>
 
     <dimen name="author_image_size">64dp</dimen>
 

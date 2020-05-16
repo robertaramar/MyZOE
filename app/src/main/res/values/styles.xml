@@ -19,6 +19,7 @@
         <item name="about_libraries_dividerLight_openSource">
             @color/about_libraries_dividerLight_openSource
         </item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
     </style>
 
     <style name="AppTheme.NoActionBar">

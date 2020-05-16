@@ -5,14 +5,15 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.google.android.material.navigation.NavigationView;
-
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+
+import com.google.android.material.navigation.NavigationView;
+
 import de.aramar.zoe.R;
 import de.aramar.zoe.security.LoginController;
 
@@ -70,6 +71,10 @@ public class MainActivity extends BaseActivity {
         if (id == R.id.action_about) {
             Intent aboutIntent = new Intent(this, AboutActivity.class);
             this.startActivity(aboutIntent);
+            return true;
+        }
+        if (id == R.id.action_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
             return true;
         } else {
             return super.onOptionsItemSelected(item);
