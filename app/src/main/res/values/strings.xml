@@ -57,25 +57,8 @@
     <string name="action_refresh">Refresh</string>
     <string name="not_implemented_yet">Not implemented yet</string>
     <string name="login_save_credentials">Save credentials</string>
-    <string name="pref_unit_using_kilometers">Using kilometers</string>
-    <string name="pref_unit_using_miles">Using miles</string>
-    <string name="pref_unit_kilometer">Kilometers</string>
-    <string name="pref_unit_miles">Miles</string>
-    <string name="pref_unit_using_celcius">Using Celsius</string>
-    <string name="pref_unit_using_fahrenheit">Using Fahrenheit</string>
-    <string name="pref_unit_celsius">Celsius</string>
-    <string name="pref_unit_fahrenheit">Fahrenheit</string>
-    <string name="pref_unit_distance">Distance units</string>
-    <string name="pref_unit_temperature">Temperature units</string>
-    <string name="pref_category_units">Units</string>
-    <string name="pref_category_api">API</string>
-    <string name="pref_api_cockpit">Cockpit (odometer)</string>
-    <string name="pref_api_battery">Battery</string>
-    <string name="pref_api_using_v1">Using V1</string>
-    <string name="pref_api_using_v2">Using V2</string>
-    <string name="pref_api_v1">V1</string>
-    <string name="pref_api_v2">V2</string>
     <string name="action_about">About</string>
     <string name="label_clipboard_content" translatable="false">MyZOE</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
+    <string name="label_void">void</string>
 </resources>

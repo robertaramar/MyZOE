@@ -21,13 +21,17 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+
 import de.aramar.zoe.R;
 import de.aramar.zoe.utilities.Tools;
 
 public class BaseAboutFragment extends Fragment {
     private static final String GITHUB_URI = "https://github.com/robertaramar/MyZOE";
+
     private static final String CHANGELOG_URI = GITHUB_URI + "/blob/master/CHANGELOG.md";
+
     private static final String MIT_URI = GITHUB_URI + "/blob/master/LICENSE";
+
     private static final String FAQ_URI = GITHUB_URI + "/wiki/Frequently-Asked-Questions";
 
     private static final String AUTHOR1_GITHUB = "https://github.com/robertaramar";
@@ -36,13 +40,13 @@ public class BaseAboutFragment extends Fragment {
 
     private static final String SUPPORT_URI = GITHUB_URI + "/blob/master/README.md#contribute";
 
-    static final int[] imageResources = {
-            R.id.aboutImgVersion, R.id.aboutImgLicense, R.id.aboutImgChangelog, R.id.aboutImgSource,
-            R.id.aboutImgFaq, R.id.aboutImgContributors, R.id.aboutImgSupport
-    };
+    static final int[] imageResources =
+            {R.id.aboutImgVersion, R.id.aboutImgLicense, R.id.aboutImgChangelog, R.id.aboutImgSource, R.id.aboutImgFaq, R.id.aboutImgContributors, R.id.aboutImgSupport};
 
     static long lastTap = 0;
+
     static int taps = 0;
+
     static Toast currentToast = null;
 
     @Override
@@ -50,15 +54,23 @@ public class BaseAboutFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_about, container, false);
 
-        ColorFilter filter = Tools.getThemeColorFilter(this.getActivity(), android.R.attr.textColorSecondary);
+        ColorFilter filter =
+                Tools.getThemeColorFilter(this.getActivity(), android.R.attr.textColorSecondary);
         for (int i : imageResources) {
             ImageView imgView = v.findViewById(i);
-            imgView.getDrawable().setColorFilter(filter);
+            imgView
+                    .getDrawable()
+                    .setColorFilter(filter);
         }
 
         String versionName = "";
         try {
-            PackageInfo packageInfo = this.getActivity().getPackageManager().getPackageInfo(this.getActivity().getPackageName(), 0);
+            PackageInfo packageInfo = this
+                    .getActivity()
+                    .getPackageManager()
+                    .getPackageInfo(this
+                            .getActivity()
+                            .getPackageName(), 0);
             versionName = packageInfo.versionName;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
@@ -78,10 +90,12 @@ public class BaseAboutFragment extends Fragment {
                         currentToast.cancel();
 
                     if (taps >= 3 && taps <= 7)
-                        currentToast = Toast.makeText(BaseAboutFragment.this.getActivity(), String.valueOf(taps), Toast.LENGTH_SHORT);
+                        currentToast = Toast.makeText(BaseAboutFragment.this.getActivity(),
+                                String.valueOf(taps), Toast.LENGTH_SHORT);
 
                     if (taps == 7) {
-                        currentToast = Toast.makeText(BaseAboutFragment.this.getActivity(), R.string.about_toast_special_features_enabled, Toast.LENGTH_LONG);
+                        currentToast = Toast.makeText(BaseAboutFragment.this.getActivity(),
+                                R.string.about_toast_special_features_enabled, Toast.LENGTH_LONG);
                         BaseAboutFragment.this.enableSpecialFeatures();
                     }
 
@@ -152,12 +166,16 @@ public class BaseAboutFragment extends Fragment {
 
     private void enableSpecialFeatures() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this.getActivity());
-        builder.setTitle(R.string.about_title_special_features)
+        builder
+                .setTitle(R.string.about_title_special_features)
                 .setMessage(R.string.about_dialog_special_features)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        Toast.makeText(BaseAboutFragment.this.getActivity(), R.string.about_toast_special_features, Toast.LENGTH_LONG).show();
+                        Toast
+                                .makeText(BaseAboutFragment.this.getActivity(),
+                                        R.string.about_toast_special_features, Toast.LENGTH_LONG)
+                                .show();
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -176,9 +194,15 @@ public class BaseAboutFragment extends Fragment {
     }
 
     public void copyToClipboard(String uri) {
-        ClipboardManager clipboard = (ClipboardManager) this.getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipboardManager clipboard = (ClipboardManager) this
+                .getActivity()
+                .getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText("MyZOE", uri);
         clipboard.setPrimaryClip(clip);
-        Toast.makeText(this.getActivity(), this.getString(R.string.about_toast_copied_to_clipboard), Toast.LENGTH_SHORT).show();
+        Toast
+                .makeText(this.getActivity(),
+                        this.getString(R.string.about_toast_copied_to_clipboard),
+                        Toast.LENGTH_SHORT)
+                .show();
     }
 }

@@ -46,18 +46,7 @@ public enum SecurityStatus {
     /**
      * an error has occurred
      */
-    ERROR(-1, R.string.login_value_status_error, R.string.login_value_status_error),
-
-    /**
-     * The current Gigya JWT is expired
-     */
-    GIGYA_JWT_EXPIRED(-2, R.string.login_status_expired_gigya, R.string.login_status_expired_gigya),
-
-    /**
-     * The current Gigya JWT is expired
-     */
-    KAMEREON_JWT_EXPIRED(-3, R.string.login_status_expired_kamereon,
-            R.string.login_status_expired_kamereon);
+    ERROR(-1, R.string.login_value_status_error, R.string.login_value_status_error);
 
     /**
      * The current level of security, the higher, the better

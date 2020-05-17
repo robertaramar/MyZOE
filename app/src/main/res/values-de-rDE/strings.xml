@@ -56,24 +56,7 @@
     <string name="action_refresh">Aktualisieren</string>
     <string name="not_implemented_yet">Noch nicht implementiert</string>
     <string name="login_save_credentials">Anmeldedaten speichern</string>
-    <string name="pref_unit_using_kilometers">Benutze Kilometer</string>
-    <string name="pref_unit_using_miles">Benutze Meilen</string>
-    <string name="pref_unit_kilometer">Kilometer</string>
-    <string name="pref_unit_miles">Meilen</string>
-    <string name="pref_unit_using_celcius">Benutze Celsius</string>
-    <string name="pref_unit_using_fahrenheit">Benutze Fahrenheit</string>
-    <string name="pref_unit_celsius">Celsius</string>
-    <string name="pref_unit_fahrenheit">Fahrenheit</string>
-    <string name="pref_unit_distance">Entfernungseinheiten</string>
-    <string name="pref_unit_temperature">Temperatureinheiten</string>
-    <string name="pref_category_units">Einheiten</string>
-    <string name="pref_category_api">API</string>
-    <string name="pref_api_cockpit">Cockpit (Laufleistung)</string>
-    <string name="pref_api_battery">Batterie</string>
-    <string name="pref_api_using_v1">Benutze V1</string>
-    <string name="pref_api_using_v2">Benutze V2</string>
-    <string name="pref_api_v1">V1</string>
-    <string name="pref_api_v2">V2</string>
     <string name="action_about">Über</string>
     <string name="toast_copied_to_clipboard">In Zwischenablage kopiert</string>
+    <string name="label_void">ungültig</string>
 </resources>

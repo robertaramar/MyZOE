@@ -10,8 +10,6 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.JsonRequest;
 
@@ -35,11 +33,6 @@ public class ConfigProvider {
      */
     private static final String TOKEN_PROD_SERVER =
             "https://renault-wrd-prod-1-euw1-myrapp-one.s3-eu-west-1.amazonaws.com";
-
-    /**
-     * Server to obtain config data like API tokens and URLs from the Renault backends.
-     */
-    private static final String TOKEN_MOCK_SERVER = "http://10.0.2.2:55555";
 
     /**
      * URL to obtain config data like API tokens and URLs
@@ -99,59 +92,51 @@ public class ConfigProvider {
      *
      * @param locale like de_DE, en_GB, fr_FR
      */
-    public void loadConfigData(Locale locale) {
+    void loadConfigData(Locale locale) {
         this.configData.setLocale(locale);
         final String url = MessageFormat.format(TOKEN_PROD_SERVER + TOKEN_PATH, locale.toString());
         // clear all data, we are starting fresh
         JsonRequest<JSONObject> jsonObjectRequest =
-                new JsonObjectRequest(Request.Method.GET, url, null,
-                        new Response.Listener<JSONObject>() {
-                            public void onResponse(JSONObject response) {
-                                Log.i(TAG, "Response: " + response.toString());
-                                try {
-                                    String string = response
-                                            .getJSONObject("servers")
-                                            .getJSONObject("wiredProd")
-                                            .getString("target");
-                                    ConfigProvider.this.configData.setWiredTarget(string);
-                                    string = response
-                                            .getJSONObject("servers")
-                                            .getJSONObject("wiredProd")
-                                            .getString("apikey");
-                                    ConfigProvider.this.configData.setWiredApiKey(string);
-                                    string = response
-                                            .getJSONObject("servers")
-                                            .getJSONObject("gigyaProd")
-                                            .getString("target");
-                                    ConfigProvider.this.configData.setGigyaTarget(string);
-                                    string = response
-                                            .getJSONObject("servers")
-                                            .getJSONObject("gigyaProd")
-                                            .getString("apikey");
-                                    ConfigProvider.this.configData.setGigyaApiKey(string);
-                                    ConfigProvider.this.configLiveData.postValue(
-                                            ConfigProvider.this.configData);
-                                } catch (JSONException e) {
-                                    Log.e(TAG, "Invalid JSON response", e.getCause());
-                                    ConfigProvider.this.configData.setErrorText(
-                                            "Invalid JSON response " + e.getMessage());
-                                    ConfigProvider.this.configData.setError(true);
-                                    ConfigProvider.this.configLiveData.postValue(
-                                            ConfigProvider.this.configData);
-                                }
-                            }
-                        }, new Response.ErrorListener() {
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        String logMessage = "Invalid JSON response " + error.getMessage();
-                        Log.d(TAG, logMessage);
-                        Log.e(TAG, "requrest failed:", error.getCause());
-                        ConfigProvider.this.configData.setErrorText(logMessage);
+                new JsonObjectRequest(Request.Method.GET, url, null, response -> {
+                    Log.i(TAG, "Response: " + response.toString());
+                    try {
+                        String string = response
+                                .getJSONObject("servers")
+                                .getJSONObject("wiredProd")
+                                .getString("target");
+                        ConfigProvider.this.configData.setWiredTarget(string);
+                        string = response
+                                .getJSONObject("servers")
+                                .getJSONObject("wiredProd")
+                                .getString("apikey");
+                        ConfigProvider.this.configData.setWiredApiKey(string);
+                        string = response
+                                .getJSONObject("servers")
+                                .getJSONObject("gigyaProd")
+                                .getString("target");
+                        ConfigProvider.this.configData.setGigyaTarget(string);
+                        string = response
+                                .getJSONObject("servers")
+                                .getJSONObject("gigyaProd")
+                                .getString("apikey");
+                        ConfigProvider.this.configData.setGigyaApiKey(string);
+                        ConfigProvider.this.configLiveData.postValue(
+                                ConfigProvider.this.configData);
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Invalid JSON response", e.getCause());
+                        ConfigProvider.this.configData.setErrorText(
+                                "Invalid JSON response " + e.getMessage());
                         ConfigProvider.this.configData.setError(true);
                         ConfigProvider.this.configLiveData.postValue(
                                 ConfigProvider.this.configData);
                     }
+                }, error -> {
+                    String logMessage = "Invalid JSON response " + error.getMessage();
+                    Log.d(TAG, logMessage);
+                    Log.e(TAG, "requrest failed:", error.getCause());
+                    ConfigProvider.this.configData.setErrorText(logMessage);
+                    ConfigProvider.this.configData.setError(true);
+                    ConfigProvider.this.configLiveData.postValue(ConfigProvider.this.configData);
                 });
         this.queue.add(jsonObjectRequest);
     }

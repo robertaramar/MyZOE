@@ -17,14 +17,14 @@ public class BackendTraffic {
 
     private ImageLoader imageLoader;
 
-    private static Context ctx;
+    private Context ctx;
 
     private BackendTraffic(Context context) {
         ctx = context;
         this.requestQueue = this.getRequestQueue();
 
         this.imageLoader = new ImageLoader(this.requestQueue, new ImageLoader.ImageCache() {
-            private final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(20);
+            private final LruCache<String, Bitmap> cache = new LruCache<>(20);
 
             @Override
             public Bitmap getBitmap(String url) {

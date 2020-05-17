@@ -7,12 +7,9 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 
 import org.json.JSONException;
@@ -68,12 +65,7 @@ public class GigyaProvider {
         ConfigProvider
                 .getConfig(application)
                 .getConfigLiveData()
-                .observeForever(new Observer<ConfigData>() {
-                    @Override
-                    public void onChanged(ConfigData configData) {
-                        GigyaProvider.this.configData = configData;
-                    }
-                });
+                .observeForever(configData -> GigyaProvider.this.configData = configData);
     }
 
     /**
@@ -105,26 +97,21 @@ public class GigyaProvider {
      * @param username name registered to Renault
      * @param password password for user
      */
-    public void getGigyaSession(final String username, final String password) {
+    void getGigyaSession(final String username, final String password) {
         if (this.configData != null && this.configData.isValid()) {
             this.gigyaData = new GigyaData();
             Map<String, String> params = new HashMap<>();
             params.put("ApiKey", this.configData.getGigyaApiKey());
             params.put("loginID", username);
             params.put("password", password);
-            this.getDataFromGigyaFramework(Request.Method.POST, "login", null, params,
-                    new GigyaProvider.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) throws JSONException {
-                            GigyaProvider.this.gigyaData.setSessionCookie(response
-                                    .getJSONObject("sessionInfo")
-                                    .getString("cookieValue"));
-                            GigyaProvider.this.gigyaData.setStatus(
-                                    GigyaData.GigyaStatus.SESSION_COOKIE_AVAILABLE);
-                            GigyaProvider.this.gigyaLiveData.postValue(
-                                    GigyaProvider.this.gigyaData);
-                        }
-                    });
+            this.getDataFromGigyaFramework(Request.Method.POST, "login", null, params, response -> {
+                GigyaProvider.this.gigyaData.setSessionCookie(response
+                        .getJSONObject("sessionInfo")
+                        .getString("cookieValue"));
+                GigyaProvider.this.gigyaData.setStatus(
+                        GigyaData.GigyaStatus.SESSION_COOKIE_AVAILABLE);
+                GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
+            });
         }
     }
 
@@ -133,22 +120,18 @@ public class GigyaProvider {
      *
      * @param refresh true if this is a refresh call, false for initial call
      */
-    public void getGigyaJwt(final boolean refresh) {
+    void getGigyaJwt(final boolean refresh) {
         if (this.configData != null && this.configData.isValid()) {
             Map<String, String> params = new HashMap<>();
             params.put("oauth_token", this.gigyaData.getSessionCookie());
             params.put("fields", "data.personId,data.gigyaDataCenter");
             params.put("expiration", "900");
             this.getDataFromGigyaFramework(Request.Method.POST, "getJWT", null, params,
-                    new GigyaProvider.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) throws JSONException {
-                            GigyaProvider.this.gigyaData.setJwt(response.getString("id_token"));
-                            GigyaProvider.this.gigyaData.setStatus(
-                                    (refresh) ? GigyaData.GigyaStatus.JWT_REFRESHED : GigyaData.GigyaStatus.JWT_AVAILABLE);
-                            GigyaProvider.this.gigyaLiveData.postValue(
-                                    GigyaProvider.this.gigyaData);
-                        }
+                    response -> {
+                        GigyaProvider.this.gigyaData.setJwt(response.getString("id_token"));
+                        GigyaProvider.this.gigyaData.setStatus(
+                                (refresh) ? GigyaData.GigyaStatus.JWT_REFRESHED : GigyaData.GigyaStatus.JWT_AVAILABLE);
+                        GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
                     });
         }
     }
@@ -156,22 +139,18 @@ public class GigyaProvider {
     /**
      * Retrieve the person ID from the accounts framework. Later needed to query for available FINs.
      */
-    public void getGigyaPersonId() {
+    void getGigyaPersonId() {
         if (this.configData != null && this.configData.isValid()) {
             Map<String, String> params = new HashMap<>();
             params.put("oauth_token", this.gigyaData.getSessionCookie());
             this.getDataFromGigyaFramework(Request.Method.POST, "getAccountInfo", null, params,
-                    new GigyaProvider.Listener<JSONObject>() {
-                        @Override
-                        public void onResponse(JSONObject response) throws JSONException {
-                            GigyaProvider.this.gigyaData.setPersonId(response
-                                    .getJSONObject("data")
-                                    .getString("personId"));
-                            GigyaProvider.this.gigyaData.setStatus(
-                                    GigyaData.GigyaStatus.PERSON_AVAILABLE);
-                            GigyaProvider.this.gigyaLiveData.postValue(
-                                    GigyaProvider.this.gigyaData);
-                        }
+                    response -> {
+                        GigyaProvider.this.gigyaData.setPersonId(response
+                                .getJSONObject("data")
+                                .getString("personId"));
+                        GigyaProvider.this.gigyaData.setStatus(
+                                GigyaData.GigyaStatus.PERSON_AVAILABLE);
+                        GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
                     });
         }
     }
@@ -190,62 +169,51 @@ public class GigyaProvider {
                                            final Map<String, String> params,
                                            final GigyaProvider.Listener<JSONObject> listener) {
         final String url = this.configData.getGigyaTarget() + "/accounts." + urlSuffix;
-        JsonObjectRequest jsonObjectRequest =
-                new JsonObjectRequest(method, url, null, new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        Log.i(TAG, "Response: " + response.toString());
-                        try {
-                            listener.onResponse(response);
-                            GigyaProvider.this.gigyaLiveData.postValue(
-                                    GigyaProvider.this.gigyaData);
-                        } catch (JSONException e) {
-                            Log.e(TAG, "Invalid JSON response", e.getCause());
-                            GigyaProvider.this.gigyaData.setErrorText(
-                                    "Invalid JSON response " + e.getMessage());
-                            GigyaProvider.this.gigyaData.setError(true);
-                            GigyaProvider.this.gigyaLiveData.postValue(
-                                    GigyaProvider.this.gigyaData);
-                        }
-                    }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        String logMessage =
-                                "Failed to retrieve data from " + url + " - " + error.getMessage();
-                        Log.d(TAG, logMessage);
-                        Log.e(TAG, "request failed:", error.getCause());
-                        GigyaProvider.this.gigyaData.setErrorText(logMessage);
-                        GigyaProvider.this.gigyaData.setError(true);
-                        GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
-                    }
-                }) {
-                    /**
-                     * Prepares the params in x-www-form-urlencoded form.
-                     */
-                    @Override
-                    public byte[] getBody() {
-                        if (params != null && params.size() > 0) {
-                            return GigyaProvider.this.encodeParameters(params,
-                                    this.getParamsEncoding());
-                        }
-                        return null;
-                    }
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(method, url, null, response -> {
+            Log.i(TAG, "Response: " + response.toString());
+            try {
+                listener.onResponse(response);
+                GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
+            } catch (JSONException e) {
+                Log.e(TAG, "Invalid JSON response", e.getCause());
+                GigyaProvider.this.gigyaData.setErrorText(
+                        "Invalid JSON response " + e.getMessage());
+                GigyaProvider.this.gigyaData.setError(true);
+                GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
+            }
+        }, error -> {
+            String logMessage = "Failed to retrieve data from " + url + " - " + error.getMessage();
+            Log.d(TAG, logMessage);
+            Log.e(TAG, "request failed:", error.getCause());
+            GigyaProvider.this.gigyaData.setErrorText(logMessage);
+            GigyaProvider.this.gigyaData.setError(true);
+            GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
+        }) {
+            /**
+             * Prepares the params in x-www-form-urlencoded form.
+             */
+            @Override
+            public byte[] getBody() {
+                if (params != null && params.size() > 0) {
+                    return GigyaProvider.this.encodeParameters(params, this.getParamsEncoding());
+                }
+                return null;
+            }
 
-                    @Override
-                    public String getBodyContentType() {
-                        return "application/x-www-form-urlencoded; charset=UTF-8";
-                    }
+            @Override
+            public String getBodyContentType() {
+                return "application/x-www-form-urlencoded; charset=UTF-8";
+            }
 
-                    @Override
-                    public Map<String, String> getHeaders() throws AuthFailureError {
-                        if (headers != null) {
-                            return headers;
-                        } else {
-                            return super.getHeaders();
-                        }
-                    }
-                };
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                if (headers != null) {
+                    return headers;
+                } else {
+                    return super.getHeaders();
+                }
+            }
+        };
         this.backendTraffic.addToRequestQueue(jsonObjectRequest);
     }
 
@@ -254,7 +222,7 @@ public class GigyaProvider {
      *
      * @param params         the params map
      * @param paramsEncoding a params array
-     * @return
+     * @return byte array of encoded input parameters
      */
     private byte[] encodeParameters(Map<String, String> params, String paramsEncoding) {
         StringBuilder encodedParams = new StringBuilder();

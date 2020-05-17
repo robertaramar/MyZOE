@@ -4,7 +4,6 @@
 
  * New feature: About screen with libraries
  * New feature: Settings screen
- * New feature: Trigger heating
  * New feature: Use configurable distance and temperature units
  * New feature: Use configurable versions of API V1 and V2
 

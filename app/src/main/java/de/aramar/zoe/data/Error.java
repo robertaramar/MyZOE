@@ -6,7 +6,7 @@ import lombok.Data;
  * Class that holds error information if REST call failed.
  */
 @Data
-public class Error {
+class Error {
     /**
      * HTTP status code.
      */

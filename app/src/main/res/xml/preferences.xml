@@ -3,7 +3,7 @@
     <PreferenceCategory android:title="@string/pref_category_units">
         <SwitchPreference
             android:defaultValue="false"
-            android:key="units_distance"
+            android:key="units_distance_miles"
             android:summaryOff="@string/pref_unit_using_kilometers"
             android:summaryOn="@string/pref_unit_using_miles"
             android:switchTextOff="@string/pref_unit_kilometer"
@@ -11,7 +11,7 @@
             android:title="@string/pref_unit_distance" />
         <SwitchPreference
             android:defaultValue="false"
-            android:key="units_temperature"
+            android:key="units_temperature_fahrenheit"
             android:summaryOff="@string/pref_unit_using_celcius"
             android:summaryOn="@string/pref_unit_using_fahrenheit"
             android:switchTextOff="@string/pref_unit_celsius"
@@ -21,7 +21,7 @@
     <PreferenceCategory android:title="@string/pref_category_api">
         <SwitchPreference
             android:defaultValue="true"
-            android:key="api_cockpit"
+            android:key="api_cockpit_v2"
             android:summaryOff="@string/pref_api_using_v1"
             android:summaryOn="@string/pref_api_using_v2"
             android:switchTextOff="@string/pref_api_v1"
@@ -29,7 +29,7 @@
             android:title="@string/pref_api_cockpit" />
         <SwitchPreference
             android:defaultValue="true"
-            android:key="api_battery"
+            android:key="api_battery_v2"
             android:summaryOff="@string/pref_api_using_v1"
             android:summaryOn="@string/pref_api_using_v2"
             android:switchTextOff="@string/pref_api_v1"

@@ -8,11 +8,6 @@ public class LocationViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
 
-    public LocationViewModel() {
-        this.mText = new MutableLiveData<>();
-        this.mText.setValue("This is gallery fragment");
-    }
-
     public LiveData<String> getText() {
         return this.mText;
     }

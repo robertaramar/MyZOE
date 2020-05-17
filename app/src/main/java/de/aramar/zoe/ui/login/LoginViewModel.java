@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
 
 import java.util.Locale;
 
@@ -45,14 +44,11 @@ public class LoginViewModel extends AndroidViewModel {
         this.loginController = LoginController.getLoginController(application);
         this.loginController
                 .getLiveSecurityDataContainer()
-                .observeForever(new Observer<SecurityData>() {
-                    @Override
-                    public void onChanged(SecurityData securityData) {
-                        Log.d(TAG, "Security data change to " + securityData
-                                .getStatus()
-                                .toString());
-                        LoginViewModel.this.liveSecurityDataContainer.postValue(securityData);
-                    }
+                .observeForever(securityData -> {
+                    Log.d(TAG, "Security data change to " + securityData
+                            .getStatus()
+                            .toString());
+                    LoginViewModel.this.liveSecurityDataContainer.postValue(securityData);
                 });
     }
 
@@ -61,7 +57,7 @@ public class LoginViewModel extends AndroidViewModel {
      *
      * @return the mutable {@link LiveData} with its {@link SecurityData}
      */
-    public LiveData<SecurityData> getLiveSecurityDataContainer() {
+    LiveData<SecurityData> getLiveSecurityDataContainer() {
         return this.liveSecurityDataContainer;
     }
 
@@ -70,7 +66,7 @@ public class LoginViewModel extends AndroidViewModel {
      *
      * @param locale country code like de_DE, en_GB, fr_FR
      */
-    public void loadConfig(Locale locale) {
+    void loadConfig(Locale locale) {
         // clear all data, we are starting fresh
         securityData.clear();
         this.loginController.loadConfig(locale);
@@ -79,7 +75,7 @@ public class LoginViewModel extends AndroidViewModel {
     /**
      * Refresh both JWTs.
      */
-    public void refreshJwt() {
+    void refreshJwt() {
         this.loginController.refreshGigyaJwt();
     }
 }

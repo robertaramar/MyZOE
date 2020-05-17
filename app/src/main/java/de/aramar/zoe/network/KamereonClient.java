@@ -1,21 +1,21 @@
 package de.aramar.zoe.network;
 
 import android.app.Application;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
-
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-
-import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.Map;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
+
+import com.android.volley.Request;
+
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
+
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
 import de.aramar.zoe.data.kamereon.cockpit.Cockpit;
 import de.aramar.zoe.data.kamereon.location.Location;
@@ -42,6 +42,11 @@ public class KamereonClient {
      * The sigleton instance.
      */
     private static KamereonClient sKamereonClient;
+
+    /**
+     * Access to preferences store.
+     */
+    private final SharedPreferences defaultSharedPreferences;
 
     /**
      * Queue to process HTTP requests to backend systems.
@@ -126,24 +131,17 @@ public class KamereonClient {
         this.mKamereonData = new MutableLiveData<>();
         this.kamereonData = new KamereonData();
 
+        this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(
+                this.application.getApplicationContext());
+
         ConfigProvider
                 .getConfig(application)
                 .getConfigLiveData()
-                .observeForever(new Observer<ConfigData>() {
-                    @Override
-                    public void onChanged(ConfigData configData) {
-                        KamereonClient.this.configData = configData;
-                    }
-                });
+                .observeForever(configData -> KamereonClient.this.configData = configData);
         GigyaProvider
                 .getGigya(application)
                 .getGigyaLiveData()
-                .observeForever(new Observer<GigyaData>() {
-                    @Override
-                    public void onChanged(GigyaData gigyaData) {
-                        KamereonClient.this.gigyaData = gigyaData;
-                    }
-                });
+                .observeForever(gigyaData -> KamereonClient.this.gigyaData = gigyaData);
     }
 
     /**
@@ -219,24 +217,18 @@ public class KamereonClient {
 
             JacksonRequest<Persons> request =
                     new JacksonRequest<>(Request.Method.GET, url, headers, null, Persons.class,
-                            new Response.Listener<Persons>() {
-                                @Override
-                                public void onResponse(Persons response) {
-                                    KamereonClient.this.kamereonData.setPersons(response);
-                                    Log.d(TAG, "persons = " + KamereonClient.this.kamereonData
-                                            .getPersons()
-                                            .toString());
-                                    KamereonClient.this.kamereonData.setStatus(
-                                            KamereonData.KamereonStatus.PERSON_AVAILABLE);
-                                    KamereonClient.this.mKamereonData.postValue(
-                                            KamereonClient.this.kamereonData);
-                                }
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "error on Kamereon persons response = " + error.toString());
-                            KamereonClient.this.triggerReauthentication();
-                        }
+                            response -> {
+                                KamereonClient.this.kamereonData.setPersons(response);
+                                Log.d(TAG, "persons = " + KamereonClient.this.kamereonData
+                                        .getPersons()
+                                        .toString());
+                                KamereonClient.this.kamereonData.setStatus(
+                                        KamereonData.KamereonStatus.PERSON_AVAILABLE);
+                                KamereonClient.this.mKamereonData.postValue(
+                                        KamereonClient.this.kamereonData);
+                            }, error -> {
+                        Log.d(TAG, "error on Kamereon persons response = " + error.toString());
+                        KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
         }
@@ -264,23 +256,17 @@ public class KamereonClient {
 
             JacksonRequest<Token> request =
                     new JacksonRequest<>(Request.Method.GET, url, headers, null, Token.class,
-                            new Response.Listener<Token>() {
-                                @Override
-                                public void onResponse(Token response) {
-                                    KamereonClient.this.kamereonData.setToken(response);
-                                    Log.d(TAG,
-                                            "token = " + KamereonClient.this.kamereonData.getToken());
-                                    KamereonClient.this.kamereonData.setStatus(
-                                            (refresh) ? KamereonData.KamereonStatus.JWT_REFRESHED : KamereonData.KamereonStatus.JWT_AVAILABLE);
-                                    KamereonClient.this.mKamereonData.postValue(
-                                            KamereonClient.this.kamereonData);
-                                }
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "error on Kamereon token response = " + error.toString());
-                            KamereonClient.this.triggerReauthentication();
-                        }
+                            response -> {
+                                KamereonClient.this.kamereonData.setToken(response);
+                                Log.d(TAG,
+                                        "token = " + KamereonClient.this.kamereonData.getToken());
+                                KamereonClient.this.kamereonData.setStatus(
+                                        (refresh) ? KamereonData.KamereonStatus.JWT_REFRESHED : KamereonData.KamereonStatus.JWT_AVAILABLE);
+                                KamereonClient.this.mKamereonData.postValue(
+                                        KamereonClient.this.kamereonData);
+                            }, error -> {
+                        Log.d(TAG, "error on Kamereon token response = " + error.toString());
+                        KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
         }
@@ -308,20 +294,14 @@ public class KamereonClient {
 
             JacksonRequest<Vehicles> request =
                     new JacksonRequest<>(Request.Method.GET, url, headers, null, Vehicles.class,
-                            new Response.Listener<Vehicles>() {
-                                @Override
-                                public void onResponse(Vehicles response) {
-                                    Log.d(TAG, "vehicles = " + response.toString());
-                                    KamereonClient.this.vehicles = response;
-                                    KamereonClient.this.mVehicles.postValue(
-                                            KamereonClient.this.vehicles);
-                                }
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "error on Kamereon vehicles response = " + error.toString());
-                            KamereonClient.this.triggerReauthentication();
-                        }
+                            response -> {
+                                Log.d(TAG, "vehicles = " + response.toString());
+                                KamereonClient.this.vehicles = response;
+                                KamereonClient.this.mVehicles.postValue(
+                                        KamereonClient.this.vehicles);
+                            }, error -> {
+                        Log.d(TAG, "error on Kamereon vehicles response = " + error.toString());
+                        KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
         }
@@ -338,32 +318,28 @@ public class KamereonClient {
             headers.put("x-kamereon-authorization", "Bearer " + this.kamereonData
                     .getToken()
                     .getAccessToken());
+            String versionAPI =
+                    this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
-                    "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v2/cars/{2}/battery-status?country={3}",
+                    "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/battery-status?country={4}",
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()
                             .get(0)
-                            .getAccountId(), vin, this.configData
+                            .getAccountId(), versionAPI, vin, this.configData
                             .getLocale()
                             .getCountry());
 
             JacksonRequest<BatteryStatus> request =
                     new JacksonRequest<>(Request.Method.GET, url, headers, null,
-                            BatteryStatus.class, new Response.Listener<BatteryStatus>() {
-                        @Override
-                        public void onResponse(BatteryStatus response) {
-                            Log.d(TAG, "battery = " + response.toString());
-                            KamereonClient.this.batteryResponse = response;
-                            KamereonClient.this.mBatteryResponse.postValue(
-                                    KamereonClient.this.batteryResponse);
-                        }
-                    }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "error on Kamereon battery response = " + error.toString());
-                            KamereonClient.this.triggerReauthentication();
-                        }
+                            BatteryStatus.class, response -> {
+                        Log.d(TAG, "battery = " + response.toString());
+                        KamereonClient.this.batteryResponse = response;
+                        KamereonClient.this.mBatteryResponse.postValue(
+                                KamereonClient.this.batteryResponse);
+                    }, error -> {
+                        Log.d(TAG, "error on Kamereon battery response = " + error.toString());
+                        KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
         }
@@ -380,32 +356,28 @@ public class KamereonClient {
             headers.put("x-kamereon-authorization", "Bearer " + this.kamereonData
                     .getToken()
                     .getAccessToken());
+            String versionAPI =
+                    this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
-                    "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/cockpit?country={3}",
+                    "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/cockpit?country={4}",
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()
                             .get(0)
-                            .getAccountId(), vin, this.configData
+                            .getAccountId(), versionAPI, vin, this.configData
                             .getLocale()
                             .getCountry());
 
             JacksonRequest<Cockpit> request =
                     new JacksonRequest<>(Request.Method.GET, url, headers, null, Cockpit.class,
-                            new Response.Listener<Cockpit>() {
-                                @Override
-                                public void onResponse(Cockpit response) {
-                                    Log.d(TAG, "cockpit = " + response.toString());
-                                    KamereonClient.this.cockpitResponse = response;
-                                    KamereonClient.this.mCockpitResponse.postValue(
-                                            KamereonClient.this.cockpitResponse);
-                                }
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "error on Kamereon cockpit response = " + error.toString());
-                            KamereonClient.this.triggerReauthentication();
-                        }
+                            response -> {
+                                Log.d(TAG, "cockpit = " + response.toString());
+                                KamereonClient.this.cockpitResponse = response;
+                                KamereonClient.this.mCockpitResponse.postValue(
+                                        KamereonClient.this.cockpitResponse);
+                            }, error -> {
+                        Log.d(TAG, "error on Kamereon cockpit response = " + error.toString());
+                        KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
         }
@@ -434,20 +406,14 @@ public class KamereonClient {
 
             JacksonRequest<Location> request =
                     new JacksonRequest<>(Request.Method.GET, url, headers, null, Location.class,
-                            new Response.Listener<Location>() {
-                                @Override
-                                public void onResponse(Location response) {
-                                    Log.d(TAG, "location = " + response.toString());
-                                    KamereonClient.this.locationResponse = response;
-                                    KamereonClient.this.mLocationResponse.postValue(
-                                            KamereonClient.this.locationResponse);
-                                }
-                            }, new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "error on Kamereon location response = " + error.toString());
-                            KamereonClient.this.triggerReauthentication();
-                        }
+                            response -> {
+                                Log.d(TAG, "location = " + response.toString());
+                                KamereonClient.this.locationResponse = response;
+                                KamereonClient.this.mLocationResponse.postValue(
+                                        KamereonClient.this.locationResponse);
+                            }, error -> {
+                        Log.d(TAG, "error on Kamereon location response = " + error.toString());
+                        KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
         }

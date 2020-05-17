@@ -1,7 +1,12 @@
 package de.aramar.zoe.ui.home;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
+import android.icu.text.MeasureFormat;
+import android.icu.util.Measure;
+import android.icu.util.MeasureUnit;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -19,7 +24,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
@@ -27,6 +31,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 
 import java.util.List;
+import java.util.Objects;
 
 import de.aramar.zoe.R;
 import de.aramar.zoe.data.Summary;
@@ -34,9 +39,10 @@ import de.aramar.zoe.data.kamereon.battery.Attributes;
 import de.aramar.zoe.data.kamereon.vehicles.Asset;
 import de.aramar.zoe.data.kamereon.vehicles.Rendition;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleLink;
-import de.aramar.zoe.data.kamereon.vehicles.Vehicles;
 import de.aramar.zoe.network.BackendTraffic;
+import de.aramar.zoe.utilities.Tools;
 import lombok.SneakyThrows;
+
 
 public class HomeFragment extends Fragment implements AdapterView.OnItemSelectedListener, SwipeRefreshLayout.OnRefreshListener {
     private static final String TAG = HomeViewModel.class.getCanonicalName();
@@ -75,10 +81,18 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
 
     private TableRow capacityRow;
 
+    /**
+     * Access to preferences store.
+     */
+    private SharedPreferences defaultSharedPreferences;
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         this.setHasOptionsMenu(true);
+
+        this.defaultSharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
         this.imageLoader = BackendTraffic
                 .getInstance(this.getContext())
@@ -87,34 +101,28 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         this.homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         this.homeViewModel
                 .getSummary()
-                .observe(this.getViewLifecycleOwner(), new Observer<Summary>() {
-                    @SuppressLint("DefaultLocale")
-                    @Override
-                    public void onChanged(@Nullable Summary summary) {
-                        HomeFragment.this.updateData(summary);
-                        if (HomeFragment.this.swipeRefreshLayout.isRefreshing()) {
-                            HomeFragment.this.swipeRefreshLayout.setRefreshing(false);
-                        }
+                .observe(this.getViewLifecycleOwner(), summary -> {
+                    HomeFragment.this.updateData(summary);
+                    if (HomeFragment.this.swipeRefreshLayout.isRefreshing()) {
+                        HomeFragment.this.swipeRefreshLayout.setRefreshing(false);
                     }
                 });
         this.homeViewModel
                 .getVehicles()
-                .observe(this.getViewLifecycleOwner(), new Observer<Vehicles>() {
-                    @Override
-                    public void onChanged(@Nullable Vehicles vehicles) {
-                        ArrayAdapter<Object> vehiclesArrayAdapter =
-                                new ArrayAdapter<>(HomeFragment.this.getContext(),
-                                        android.R.layout.simple_spinner_dropdown_item, vehicles
-                                        .getVehicleLinks()
-                                        .toArray());
-                        vehiclesArrayAdapter.setDropDownViewResource(
-                                android.R.layout.simple_spinner_dropdown_item);
-                        HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
-                        // Disable if there is only one entry
-                        HomeFragment.this.finSpinner.setEnabled(vehicles
-                                .getVehicleLinks()
-                                .size() > 1);
-                    }
+                .observe(this.getViewLifecycleOwner(), vehicles -> {
+                    ArrayAdapter<Object> vehiclesArrayAdapter =
+                            new ArrayAdapter<>(HomeFragment.this.requireContext(),
+                                    android.R.layout.simple_spinner_dropdown_item,
+                                    Objects.requireNonNull(vehicles
+                                            .getVehicleLinks()
+                                            .toArray()));
+                    vehiclesArrayAdapter.setDropDownViewResource(
+                            android.R.layout.simple_spinner_dropdown_item);
+                    HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
+                    // Disable if there is only one entry
+                    HomeFragment.this.finSpinner.setEnabled(vehicles
+                            .getVehicleLinks()
+                            .size() > 1);
                 });
 
         this.swipeRefreshLayout.setRefreshing(true);
@@ -234,6 +242,10 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      */
     @SuppressLint("DefaultLocale")
     private void updateData(Summary summary) {
+        String labelVoid = this
+                .requireContext()
+                .getResources()
+                .getString(R.string.label_void);
         if (summary.getBattery() != null && summary
                 .getBattery()
                 .getData() != null && summary
@@ -244,23 +256,59 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                     .getBattery()
                     .getData()
                     .getAttributes();
-            this.batteryValueTextView.setText(String.format("%d%%", attributes.getBatteryLevel()));
-            this.batteryProgressBar.setProgress(attributes.getBatteryLevel());
+
+            String batteryLevel = (attributes.getBatteryLevel() != null) ? String.format("%d%%",
+                    attributes.getBatteryLevel()) : labelVoid;
+            this.batteryValueTextView.setText(batteryLevel);
+            this.batteryProgressBar.setProgress(
+                    attributes.getBatteryLevel() != null ? attributes.getBatteryLevel() : 0);
+
             this.batteryPlugSwitch.setChecked(attributes.getPlugStatus() != 0);
-            this.batteryChargeSwitch.setChecked(attributes.getChargingStatus() >= 1.0);
-            this.batteryTemperatureTextView.setText(
-                    this.toTemperatureString(attributes.getBatteryTemperature()));
-            this.batteryAutonomyTextView.setText(this.toOdometerString(attributes
-                    .getBatteryAutonomy()
-                    .doubleValue()));
-            this.batteryCapacityTextView.setText(
-                    String.format("%d kW/h", attributes.getBatteryCapacity()));
-            this.capacityRow.setVisibility(
-                    attributes.getBatteryCapacity() > 0 ? View.VISIBLE : View.GONE);  // useless?
-            this.batteryEnergyTextView.setText(
-                    String.format("%d kW/h", attributes.getBatteryAvailableEnergy()));
-            this.batteryRemainingTimeTextView.setText(
-                    String.format("%d m", attributes.getChargingRemainingTime()));
+
+            if (attributes.getChargingStatus() != null) {
+                // V2 API
+                this.batteryChargeSwitch.setChecked(attributes.getChargingStatus() >= 1.0);
+            } else {
+                // V1 API
+                Object chargeStatus = null;
+                if (attributes
+                        .getAdditionalProperties()
+                        .containsKey("chargeStatus")) {
+                    chargeStatus = attributes
+                            .getAdditionalProperties()
+                            .get("chargeStatus");
+                }
+                this.batteryChargeSwitch.setChecked(chargeStatus != null && (int) chargeStatus > 0);
+            }
+
+            String batteryTemperature =
+                    (attributes.getBatteryTemperature() != null) ? this.toTemperatureString(
+                            attributes.getBatteryTemperature()) : labelVoid;
+            this.batteryTemperatureTextView.setText(batteryTemperature);
+
+            String batteryAutonomy =
+                    (attributes.getBatteryAutonomy() != null) ? this.toOdometerString(attributes
+                            .getBatteryAutonomy()
+                            .doubleValue()) : labelVoid;
+            this.batteryAutonomyTextView.setText(batteryAutonomy);
+
+            int visibility = View.GONE;
+            if (attributes.getBatteryCapacity() != null) {
+                this.batteryCapacityTextView.setText(
+                        String.format("%d kW/h", attributes.getBatteryCapacity()));
+                visibility = attributes.getBatteryCapacity() > 0 ? View.VISIBLE : View.GONE;
+            }
+            this.capacityRow.setVisibility(visibility);
+
+            String batteryEnergy =
+                    attributes.getBatteryAvailableEnergy() != null ? String.format("%d kW/h",
+                            attributes.getBatteryAvailableEnergy()) : labelVoid;
+            this.batteryEnergyTextView.setText(batteryEnergy);
+
+            String batteryRemainingTime =
+                    (attributes.getChargingRemainingTime() != null) ? String.format("%d m",
+                            attributes.getChargingRemainingTime()) : labelVoid;
+            this.batteryRemainingTimeTextView.setText(batteryRemainingTime);
         }
         if (summary.getCockpit() != null) {
             this.odometerValueTextView.setText(this.toOdometerString(summary
@@ -278,7 +326,12 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      * @return computed string
      */
     private String toOdometerString(Double value) {
-        return String.format("%.2f km", value); // TODO: settings
+        boolean isMiles = this.defaultSharedPreferences.getBoolean("units_distance_miles", false);
+        Measure kilometers = new Measure(value, MeasureUnit.KILOMETER);
+        Measure miles = new Measure(value / 1.60934, MeasureUnit.MILE);
+        MeasureFormat formatter =
+                MeasureFormat.getInstance(Tools.getSystemLocale(), MeasureFormat.FormatWidth.SHORT);
+        return formatter.formatMeasures((isMiles) ? miles : kilometers);
     }
 
     /**
@@ -288,7 +341,13 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      * @return computed string
      */
     private String toTemperatureString(int value) {
-        return String.format("%d°C", value); // TODO: settings
+        boolean isFahrenheit =
+                this.defaultSharedPreferences.getBoolean("units_temperature_fahrenheit", false);
+        Measure celsius = new Measure(value, MeasureUnit.CELSIUS);
+        Measure fahrenheit = new Measure(value * 9 / 5 + 32, MeasureUnit.FAHRENHEIT);
+        MeasureFormat formatter =
+                MeasureFormat.getInstance(Tools.getSystemLocale(), MeasureFormat.FormatWidth.SHORT);
+        return formatter.formatMeasures((isFahrenheit) ? fahrenheit : celsius);
     }
 
     /**

@@ -6,7 +6,6 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
 
 import de.aramar.zoe.data.Summary;
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
@@ -16,11 +15,6 @@ import de.aramar.zoe.data.kamereon.vehicles.Vehicles;
 import de.aramar.zoe.network.KamereonClient;
 
 public class HomeViewModel extends AndroidViewModel {
-
-    private static final String TAG = HomeViewModel.class.getCanonicalName();
-
-    private static final String BATTERY_STATUS =
-            "http://10.0.2.2:55555/commerce/v1/accounts/bd69aaf9-7e7e-4fa6-b6a9-88b92f188cab" + "/kamereon/kca/car-adapter/v2/cars/VF1AG000X64494657/battery-status?country=GB";
 
     /**
      * Access to Kamereon API.
@@ -35,10 +29,6 @@ public class HomeViewModel extends AndroidViewModel {
     // Subscribed live data
     private LiveData<Vehicles> mVehicles;
 
-    private LiveData<BatteryStatus> mBatteryResponse;
-
-    private LiveData<Cockpit> mCockpitResponse;
-
     private LiveData<Location> mLocationRespose;
 
     public HomeViewModel(@NonNull Application application) {
@@ -48,26 +38,20 @@ public class HomeViewModel extends AndroidViewModel {
 
         this.kamereonClient = KamereonClient.getKamereonClient(application);
         this.mVehicles = this.kamereonClient.getVehiclesLiveData();
-        this.mBatteryResponse = this.kamereonClient.getBatteryResponseLiveData();
-        this.mBatteryResponse.observeForever(new Observer<BatteryStatus>() {
-            @Override
-            public void onChanged(BatteryStatus batteryResponse) {
-                HomeViewModel.this.summary.setBattery(batteryResponse);
-                HomeViewModel.this.mSummary.postValue(HomeViewModel.this.summary);
-            }
+        LiveData<BatteryStatus> mBatteryResponse = this.kamereonClient.getBatteryResponseLiveData();
+        mBatteryResponse.observeForever(batteryResponse -> {
+            HomeViewModel.this.summary.setBattery(batteryResponse);
+            HomeViewModel.this.mSummary.postValue(HomeViewModel.this.summary);
         });
-        this.mCockpitResponse = this.kamereonClient.getCockpitResponseLiveData();
-        this.mCockpitResponse.observeForever(new Observer<Cockpit>() {
-            @Override
-            public void onChanged(Cockpit cockpitResponse) {
-                HomeViewModel.this.summary.setCockpit(cockpitResponse);
-                HomeViewModel.this.mSummary.postValue(HomeViewModel.this.summary);
-            }
+        LiveData<Cockpit> mCockpitResponse = this.kamereonClient.getCockpitResponseLiveData();
+        mCockpitResponse.observeForever(cockpitResponse -> {
+            HomeViewModel.this.summary.setCockpit(cockpitResponse);
+            HomeViewModel.this.mSummary.postValue(HomeViewModel.this.summary);
         });
         this.mLocationRespose = this.kamereonClient.getLocationResponseLiveData();
     }
 
-    public LiveData<Summary> getSummary() {
+    LiveData<Summary> getSummary() {
         return this.mSummary;
     }
 
@@ -79,11 +63,11 @@ public class HomeViewModel extends AndroidViewModel {
         return this.mLocationRespose;
     }
 
-    public void updateBatteryStatus(String vin) {
+    void updateBatteryStatus(String vin) {
         this.kamereonClient.getBatteryStatus(vin);
     }
 
-    public void updateCockpit(String vin) {
+    void updateCockpit(String vin) {
         this.kamereonClient.getCockpit(vin);
     }
 

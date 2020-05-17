@@ -1,6 +1,5 @@
 package de.aramar.zoe.ui.location;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,7 +8,6 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.android.volley.VolleyError;
@@ -36,7 +34,6 @@ import de.aramar.zoe.data.kamereon.location.Location;
 import de.aramar.zoe.data.kamereon.vehicles.Asset;
 import de.aramar.zoe.data.kamereon.vehicles.Rendition;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleDetails;
-import de.aramar.zoe.data.kamereon.vehicles.Vehicles;
 import de.aramar.zoe.network.BackendTraffic;
 import de.aramar.zoe.ui.home.HomeViewModel;
 import lombok.SneakyThrows;
@@ -67,29 +64,22 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         this.homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         this.homeViewModel
                 .getVehicles()
-                .observe(this.getViewLifecycleOwner(), new Observer<Vehicles>() {
-                    @SuppressLint("DefaultLocale")
-                    @Override
-                    public void onChanged(@Nullable Vehicles vehicles) {
-                        LocationFragment.this.homeViewModel.updateLocation(vehicles
-                                .getVehicleLinks()
-                                .get(0)
-                                .getVin());
-                        LocationFragment.this.loadMarkerImage(vehicles
-                                .getVehicleLinks()
-                                .get(0)
-                                .getVehicleDetails());
-                    }
+                .observe(this.getViewLifecycleOwner(), vehicles -> {
+                    LocationFragment.this.homeViewModel.updateLocation(vehicles
+                            .getVehicleLinks()
+                            .get(0)
+                            .getVin());
+                    LocationFragment.this.loadMarkerImage(vehicles
+                            .getVehicleLinks()
+                            .get(0)
+                            .getVehicleDetails());
                 });
         this.homeViewModel
                 .getLocation()
-                .observe(this.getViewLifecycleOwner(), new Observer<Location>() {
-                    @Override
-                    public void onChanged(@Nullable Location location) {
-                        LocationFragment.this.location = location;
-                        if (LocationFragment.this.mMap != null) {
-                            LocationFragment.this.setMarker(location);
-                        }
+                .observe(this.getViewLifecycleOwner(), location -> {
+                    LocationFragment.this.location = location;
+                    if (LocationFragment.this.mMap != null) {
+                        LocationFragment.this.setMarker(location);
                     }
                 });
     }
@@ -102,6 +92,7 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) this
                 .getChildFragmentManager()
                 .findFragmentById(R.id.map);
+        assert mapFragment != null;
         mapFragment.getMapAsync(this);
         return root;
     }

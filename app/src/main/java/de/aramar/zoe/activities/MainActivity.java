@@ -40,11 +40,9 @@ public class MainActivity extends BaseActivity {
         NavigationUI.setupActionBarWithNavController(this, navController,
                 this.mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
-        if (LoginController
+        if (!LoginController
                 .getLoginController(this.getApplication())
-                .isUnauthenticated() && !LoginController
-                .getLoginController(this.getApplication())
-                .startLoginUser()) {
+                .getLoginSaveCredentials()) {
             navController.navigate(R.id.nav_login);
         }
     }
@@ -74,7 +72,7 @@ public class MainActivity extends BaseActivity {
             return true;
         }
         if (id == R.id.action_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
+            this.startActivity(new Intent(this, SettingsActivity.class));
             return true;
         } else {
             return super.onOptionsItemSelected(item);

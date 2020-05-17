@@ -4,23 +4,21 @@ import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-import com.android.volley.RequestQueue;
-import com.auth0.android.jwt.JWT;
-
-import java.util.Locale;
-
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
+
+import com.auth0.android.jwt.JWT;
+
+import java.util.Locale;
+
 import de.aramar.zoe.data.security.ConfigData;
 import de.aramar.zoe.data.security.GigyaData;
 import de.aramar.zoe.data.security.KamereonData;
 import de.aramar.zoe.data.security.SecurityData;
 import de.aramar.zoe.data.security.SecurityStatus;
-import de.aramar.zoe.network.BackendTraffic;
 import de.aramar.zoe.network.KamereonClient;
 
 /**
@@ -46,19 +44,22 @@ public class LoginController extends AndroidViewModel {
     /**
      * Key to obtain boolean that indicates whether credentials should be stored.
      */
-    public static final String PREF_SAVE_CREDENTIALS = "saveCredentials";
+    private static final String PREF_SAVE_CREDENTIALS = "saveCredentials";
+
     /**
      * Key to store country.
      */
-    public static final String PREF_COUNTRY = "country";
+    private static final String PREF_COUNTRY = "country";
+
     /**
      * Key to store username.
      */
-    public static final String PREF_USERNAME = "username";
+    private static final String PREF_USERNAME = "username";
+
     /**
      * Key to store password.
      */
-    public static final String PREF_PASSWORD = "password";
+    private static final String PREF_PASSWORD = "password";
 
     /**
      * Single instance LoginController.
@@ -74,31 +75,22 @@ public class LoginController extends AndroidViewModel {
      * Current login country.
      */
     private String loginCountry;
+
     /**
      * Current login username.
      */
     private String loginUsername;
+
     /**
      * Current login password.
      */
     private String loginPassword;
 
-    /**
-     * Queue to process HTTP requests to backend systems.
-     */
-    private RequestQueue queue;
-
     private ConfigProvider configProvider;
-
-    private LiveData<ConfigData> liveConfigData;
 
     private GigyaProvider gigyaProvider;
 
-    private LiveData<GigyaData> liveGigyaData;
-
     private KamereonClient kamereonClient;
-
-    private LiveData<KamereonData> liveKamereonData;
 
     /**
      * The application wide security container. Only one instance allowed.
@@ -110,160 +102,144 @@ public class LoginController extends AndroidViewModel {
      */
     private MutableLiveData<SecurityData> liveSecurityDataContainer;
 
-    public LoginController(@NonNull Application application) {
+    private LoginController(@NonNull Application application) {
         super(application);
 
-        this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(
-                this
-                        .getApplication()
-                        .getApplicationContext());
+        this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this
+                .getApplication()
+                .getApplicationContext());
 
         this.liveSecurityDataContainer = new MutableLiveData<>();
         this.liveSecurityDataContainer.setValue(this.securityData);
-        this.queue = BackendTraffic
-                .getInstance(application.getApplicationContext())
-                .getRequestQueue();
 
         this.configProvider = ConfigProvider.getConfig(application);
-        this.liveConfigData = this.configProvider.getConfigLiveData();
+        LiveData<ConfigData> liveConfigData = this.configProvider.getConfigLiveData();
 
         this.gigyaProvider = GigyaProvider.getGigya(application);
-        this.liveGigyaData = this.gigyaProvider.getGigyaLiveData();
+        LiveData<GigyaData> liveGigyaData = this.gigyaProvider.getGigyaLiveData();
 
         this.kamereonClient = KamereonClient.getKamereonClient(application);
-        this.liveKamereonData = this.kamereonClient.getKamereonDataLiveData();
+        LiveData<KamereonData> liveKamereonData = this.kamereonClient.getKamereonDataLiveData();
 
-        this.liveConfigData.observeForever(new Observer<ConfigData>() {
-            @Override
-            public void onChanged(ConfigData configData) {
-                if (configData.isError()) {
-                    LoginController.this.securityData.setText(LoginController.this
-                            .getApplication()
-                            .getResources()
-                            .getString(
-                                    SecurityStatus.API_TOKENS_AVAILABLE.getErrorStatusTextId()) + "\n" + configData.getErrorText());
-                    LoginController.this.securityData.setStatus(SecurityStatus.ERROR);
-                } else if (configData.isValid()) {
-                    LoginController.this.securityData.setText(LoginController.this
-                            .getApplication()
-                            .getResources()
-                            .getString(SecurityStatus.API_TOKENS_AVAILABLE.getOkStatusTextId()));
-                    LoginController.this.securityData.setStatus(
-                            SecurityStatus.API_TOKENS_AVAILABLE);
-                    LoginController.this.startLoginUser();
-                } else {
-                    LoginController.this.securityData.setText(LoginController.this
-                            .getApplication()
-                            .getResources()
-                            .getString(SecurityStatus.EMPTY.getOkStatusTextId()));
-                    LoginController.this.securityData.setStatus(SecurityStatus.EMPTY);
-                }
-                LoginController.this.liveSecurityDataContainer.postValue(
-                        LoginController.this.securityData);
+        liveConfigData.observeForever(configData -> {
+            if (configData.isError()) {
+                LoginController.this.securityData.setText(LoginController.this
+                        .getApplication()
+                        .getResources()
+                        .getString(
+                                SecurityStatus.API_TOKENS_AVAILABLE.getErrorStatusTextId()) + "\n" + configData.getErrorText());
+                LoginController.this.securityData.setStatus(SecurityStatus.ERROR);
+            } else if (configData.isValid()) {
+                LoginController.this.securityData.setText(LoginController.this
+                        .getApplication()
+                        .getResources()
+                        .getString(SecurityStatus.API_TOKENS_AVAILABLE.getOkStatusTextId()));
+                LoginController.this.securityData.setStatus(SecurityStatus.API_TOKENS_AVAILABLE);
+                LoginController.this.startLoginUser();
+            } else {
+                LoginController.this.securityData.setText(LoginController.this
+                        .getApplication()
+                        .getResources()
+                        .getString(SecurityStatus.EMPTY.getOkStatusTextId()));
+                LoginController.this.securityData.setStatus(SecurityStatus.EMPTY);
             }
+            LoginController.this.liveSecurityDataContainer.postValue(
+                    LoginController.this.securityData);
         });
 
-        this.liveGigyaData.observeForever(new Observer<GigyaData>() {
-            @Override
-            public void onChanged(GigyaData gigyaData) {
-                if (gigyaData.isError()) {
-                    LoginController.this.securityData.appendText(LoginController.this
-                            .getApplication()
-                            .getResources()
-                            .getString(
-                                    SecurityStatus.GIGYA_SESSION_AVAILABLE.getErrorStatusTextId()) + "\n" + gigyaData.getErrorText());
-                    LoginController.this.securityData.setStatus(SecurityStatus.ERROR);
-                } else {
-                    switch (gigyaData.getStatus()) {
-                        case SESSION_COOKIE_AVAILABLE:
-                            gigyaData.getJwt();
-                            LoginController.this.securityData.appendText(LoginController.this
-                                    .getApplication()
-                                    .getResources()
-                                    .getString(
-                                            SecurityStatus.GIGYA_SESSION_AVAILABLE.getOkStatusTextId()));
-                            LoginController.this.securityData.setStatus(
-                                    SecurityStatus.GIGYA_SESSION_AVAILABLE);
-                            LoginController.this.gigyaProvider.getGigyaJwt(false);
-                            break;
-                        case JWT_AVAILABLE:
-                        case JWT_REFRESHED:
-                            LoginController.this.securityData.setGigyaJwt(gigyaData.getJwt());
-                            LoginController.this.securityData.appendText(LoginController.this
-                                    .getApplication()
-                                    .getResources()
-                                    .getString(
-                                            SecurityStatus.GIGYA_JWT_AVAILABLE.getOkStatusTextId()));
-                            LoginController.this.securityData.setStatus(
-                                    SecurityStatus.GIGYA_JWT_AVAILABLE);
-                            // Only continue with login sequence on initial call
-                            if (gigyaData.getStatus() == GigyaData.GigyaStatus.JWT_AVAILABLE) {
-                                LoginController.this.gigyaProvider.getGigyaPersonId();
-                            } else {
-                                // if this is a Gigya JWT refresh, go and refresh the Kamereon JWT as well
-                                LoginController.this.kamereonClient.getKamereonToken(true);
-                            }
-                            break;
-                        case PERSON_AVAILABLE:
-                            LoginController.this.securityData.appendText(LoginController.this
-                                    .getApplication()
-                                    .getResources()
-                                    .getString(
-                                            SecurityStatus.GIGYA_PERSON_AVAILABLE.getOkStatusTextId()));
-                            LoginController.this.securityData.setStatus(
-                                    SecurityStatus.GIGYA_PERSON_AVAILABLE);
-                            LoginController.this.kamereonClient.getKamereonPersons();
-                            break;
-                    }
+        liveGigyaData.observeForever(gigyaData -> {
+            if (gigyaData.isError()) {
+                LoginController.this.securityData.appendText(LoginController.this
+                        .getApplication()
+                        .getResources()
+                        .getString(
+                                SecurityStatus.GIGYA_SESSION_AVAILABLE.getErrorStatusTextId()) + "\n" + gigyaData.getErrorText());
+                LoginController.this.securityData.setStatus(SecurityStatus.ERROR);
+            } else {
+                switch (gigyaData.getStatus()) {
+                    case SESSION_COOKIE_AVAILABLE:
+                        LoginController.this.securityData.appendText(LoginController.this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.GIGYA_SESSION_AVAILABLE.getOkStatusTextId()));
+                        LoginController.this.securityData.setStatus(
+                                SecurityStatus.GIGYA_SESSION_AVAILABLE);
+                        LoginController.this.gigyaProvider.getGigyaJwt(false);
+                        break;
+                    case JWT_AVAILABLE:
+                    case JWT_REFRESHED:
+                        LoginController.this.securityData.setGigyaJwt(gigyaData.getJwt());
+                        LoginController.this.securityData.appendText(LoginController.this
+                                .getApplication()
+                                .getResources()
+                                .getString(SecurityStatus.GIGYA_JWT_AVAILABLE.getOkStatusTextId()));
+                        LoginController.this.securityData.setStatus(
+                                SecurityStatus.GIGYA_JWT_AVAILABLE);
+                        // Only continue with login sequence on initial call
+                        if (gigyaData.getStatus() == GigyaData.GigyaStatus.JWT_AVAILABLE) {
+                            LoginController.this.gigyaProvider.getGigyaPersonId();
+                        } else {
+                            // if this is a Gigya JWT refresh, go and refresh the Kamereon JWT as well
+                            LoginController.this.kamereonClient.getKamereonToken(true);
+                        }
+                        break;
+                    case PERSON_AVAILABLE:
+                        LoginController.this.securityData.appendText(LoginController.this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.GIGYA_PERSON_AVAILABLE.getOkStatusTextId()));
+                        LoginController.this.securityData.setStatus(
+                                SecurityStatus.GIGYA_PERSON_AVAILABLE);
+                        LoginController.this.kamereonClient.getKamereonPersons();
+                        break;
                 }
-                LoginController.this.liveSecurityDataContainer.postValue(
-                        LoginController.this.securityData);
             }
+            LoginController.this.liveSecurityDataContainer.postValue(
+                    LoginController.this.securityData);
         });
 
-        this.liveKamereonData.observeForever(new Observer<KamereonData>() {
-            @Override
-            public void onChanged(KamereonData kamereonData) {
-                if (kamereonData.isError()) {
-                    LoginController.this.securityData.appendText(LoginController.this
-                            .getApplication()
-                            .getResources()
-                            .getString(
-                                    SecurityStatus.KAMEREON_JWT_AVAILABLE.getErrorStatusTextId()) + "\n" + kamereonData.getErrorText());
-                    LoginController.this.securityData.setStatus(SecurityStatus.ERROR);
-                } else
-                    switch (kamereonData.getStatus()) {
-                        case PERSON_AVAILABLE:
-                            LoginController.this.securityData.appendText(LoginController.this
-                                    .getApplication()
-                                    .getResources()
-                                    .getString(
-                                            SecurityStatus.KAMEREON_PERSON_AVAILABLE.getOkStatusTextId()));
-                            LoginController.this.securityData.setStatus(
-                                    SecurityStatus.KAMEREON_PERSON_AVAILABLE);
-                            LoginController.this.kamereonClient.getKamereonToken(false);
-                            break;
-                        case JWT_AVAILABLE:
-                        case JWT_REFRESHED:
-                            LoginController.this.securityData.setKamereonJwt(kamereonData
-                                    .getToken()
-                                    .getAccessToken());
-                            LoginController.this.securityData.appendText(LoginController.this
-                                    .getApplication()
-                                    .getResources()
-                                    .getString(
-                                            SecurityStatus.KAMEREON_JWT_AVAILABLE.getOkStatusTextId()));
-                            LoginController.this.securityData.setStatus(
-                                    SecurityStatus.KAMEREON_JWT_AVAILABLE);
-                            // Only continue login sequence on initial call
-                            if (kamereonData.getStatus() == KamereonData.KamereonStatus.JWT_AVAILABLE) {
-                                LoginController.this.kamereonClient.getVehicles();
-                            }
-                            break;
-                    }
-                LoginController.this.liveSecurityDataContainer.postValue(
-                        LoginController.this.securityData);
-            }
+        liveKamereonData.observeForever(kamereonData -> {
+            if (kamereonData.isError()) {
+                LoginController.this.securityData.appendText(LoginController.this
+                        .getApplication()
+                        .getResources()
+                        .getString(
+                                SecurityStatus.KAMEREON_JWT_AVAILABLE.getErrorStatusTextId()) + "\n" + kamereonData.getErrorText());
+                LoginController.this.securityData.setStatus(SecurityStatus.ERROR);
+            } else
+                switch (kamereonData.getStatus()) {
+                    case PERSON_AVAILABLE:
+                        LoginController.this.securityData.appendText(LoginController.this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.KAMEREON_PERSON_AVAILABLE.getOkStatusTextId()));
+                        LoginController.this.securityData.setStatus(
+                                SecurityStatus.KAMEREON_PERSON_AVAILABLE);
+                        LoginController.this.kamereonClient.getKamereonToken(false);
+                        break;
+                    case JWT_AVAILABLE:
+                    case JWT_REFRESHED:
+                        LoginController.this.securityData.setKamereonJwt(kamereonData
+                                .getToken()
+                                .getAccessToken());
+                        LoginController.this.securityData.appendText(LoginController.this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.KAMEREON_JWT_AVAILABLE.getOkStatusTextId()));
+                        LoginController.this.securityData.setStatus(
+                                SecurityStatus.KAMEREON_JWT_AVAILABLE);
+                        // Only continue login sequence on initial call
+                        if (kamereonData.getStatus() == KamereonData.KamereonStatus.JWT_AVAILABLE) {
+                            LoginController.this.kamereonClient.getVehicles();
+                        }
+                        break;
+                }
+            LoginController.this.liveSecurityDataContainer.postValue(
+                    LoginController.this.securityData);
         });
     }
 
@@ -307,7 +283,7 @@ public class LoginController extends AndroidViewModel {
      * @param username name registered to Renault
      * @param password password for user
      */
-    public void loadGigya(final String username, final String password) {
+    private void loadGigya(final String username, final String password) {
         this.gigyaProvider.getGigyaSession(username, password);
     }
 
@@ -325,7 +301,7 @@ public class LoginController extends AndroidViewModel {
         return this.securityData.getStatus() == SecurityStatus.EMPTY || this.isGigyaJwtExpired() || this.isKamereonJwtExpired();
     }
 
-    public boolean isGigyaJwtExpired() {
+    private boolean isGigyaJwtExpired() {
         if (this.securityData.getGigyaJwt() != null) {
             JWT gigyaJwt = new JWT(this.securityData.getGigyaJwt());
             return gigyaJwt.isExpired(10);
@@ -334,7 +310,7 @@ public class LoginController extends AndroidViewModel {
         }
     }
 
-    public boolean isKamereonJwtExpired() {
+    private boolean isKamereonJwtExpired() {
         if (this.securityData.getKamereonJwt() != null) {
             JWT gigyaJwt = new JWT(this.securityData.getKamereonJwt());
             return gigyaJwt.isExpired(10);

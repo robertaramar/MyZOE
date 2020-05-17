@@ -10,18 +10,16 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.auth0.android.jwt.JWT;
 
 import java.text.DateFormat;
 import java.util.Locale;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import de.aramar.zoe.R;
-import de.aramar.zoe.data.security.SecurityData;
 import de.aramar.zoe.security.LoginController;
 
 public class LoginFragment extends Fragment implements View.OnClickListener {
@@ -46,7 +44,9 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         this.loginViewModel = new ViewModelProvider(this).get(LoginViewModel.class);
-        this.loginController = LoginController.getLoginController(this.getActivity().getApplication());
+        this.loginController = LoginController.getLoginController(this
+                .requireActivity()
+                .getApplication());
         View root = inflater.inflate(R.layout.fragment_login, container, false);
         this.statusTextView = root.findViewById(R.id.login_value_status);
         this.gigyaExpiresTextView = root.findViewById(R.id.login_value_gigya_expires);
@@ -61,32 +61,29 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
 
         this.loginViewModel
                 .getLiveSecurityDataContainer()
-                .observe(this.getViewLifecycleOwner(), new Observer<SecurityData>() {
-                    @Override
-                    public void onChanged(@Nullable SecurityData securityData) {
-                        LoginFragment.this.statusTextView.setText(securityData.getText());
-                        refreshButton.setEnabled(securityData
-                                .getStatus()
-                                .getLevel() > 0);
-                        switch (securityData.getStatus()) {
-                            case GIGYA_JWT_AVAILABLE:
-                            case KAMEREON_JWT_AVAILABLE:
-                                if (securityData.getGigyaJwt() != null) {
-                                    JWT gigyaJwt = new JWT(securityData.getGigyaJwt());
-                                    LoginFragment.this.gigyaExpiresTextView.setText(DateFormat
-                                            .getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                                            .format(gigyaJwt.getExpiresAt()));
-                                }
-                                if (securityData.getKamereonJwt() != null) {
-                                    JWT kamereonJwt = new JWT(securityData.getKamereonJwt());
-                                    LoginFragment.this.kamereonExpiresTextView.setText(DateFormat
-                                            .getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                                            .format(kamereonJwt.getExpiresAt()));
-                                }
-                                break;
-                            default:
-                                break;
-                        }
+                .observe(this.getViewLifecycleOwner(), securityData -> {
+                    LoginFragment.this.statusTextView.setText(securityData.getText());
+                    refreshButton.setEnabled(securityData
+                            .getStatus()
+                            .getLevel() > 0);
+                    switch (securityData.getStatus()) {
+                        case GIGYA_JWT_AVAILABLE:
+                        case KAMEREON_JWT_AVAILABLE:
+                            if (securityData.getGigyaJwt() != null) {
+                                JWT gigyaJwt = new JWT(securityData.getGigyaJwt());
+                                LoginFragment.this.gigyaExpiresTextView.setText(DateFormat
+                                        .getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                                        .format(gigyaJwt.getExpiresAt()));
+                            }
+                            if (securityData.getKamereonJwt() != null) {
+                                JWT kamereonJwt = new JWT(securityData.getKamereonJwt());
+                                LoginFragment.this.kamereonExpiresTextView.setText(DateFormat
+                                        .getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                                        .format(kamereonJwt.getExpiresAt()));
+                            }
+                            break;
+                        default:
+                            break;
                     }
                 });
 
@@ -104,7 +101,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         return root;
     }
 
-    public void onLoginButton(View loginButton) {
+    private void onLoginButton(View loginButton) {
         String loginCountry = this.countryEdit
                 .getText()
                 .toString();
@@ -130,7 +127,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         this.loginViewModel.loadConfig(locale);
     }
 
-    public void onRefreshButton(View refreshButton) {
+    private void onRefreshButton(View refreshButton) {
         Toast
                 .makeText(this.getContext(), "Refresh pressed", Toast.LENGTH_LONG)
                 .show();

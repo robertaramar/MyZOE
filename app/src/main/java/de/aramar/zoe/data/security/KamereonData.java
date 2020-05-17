@@ -40,16 +40,7 @@ public class KamereonData {
      */
     private String errorText;
 
-    /**
-     * Indicates a valid configuration.
-     *
-     * @return true if valid.
-     */
-    public boolean isValid() {
-        return this.jwt != null && this.persons != null && this.persons.getAccounts() != null;
-    }
-
     public enum KamereonStatus {
-        EMTPY, PERSON_AVAILABLE, JWT_AVAILABLE, JWT_REFRESHED, JWT_EXPIRED
+        EMTPY, PERSON_AVAILABLE, JWT_AVAILABLE, JWT_REFRESHED
     }
 }

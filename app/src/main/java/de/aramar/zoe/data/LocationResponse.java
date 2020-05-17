@@ -11,10 +11,10 @@ import lombok.Data;
  * @author robert.schneider@aramar.de
  */
 @Data
-public class LocationResponse {
+class LocationResponse {
 
     @Data
-    public static class LocationAttributes {
+    private static class LocationAttributes {
         /**
          * Latitude.
          */

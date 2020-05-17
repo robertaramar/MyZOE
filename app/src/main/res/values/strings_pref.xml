@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pref_unit_using_kilometers">Kilometers (switch for miles)</string>
+    <string name="pref_unit_using_miles">miles (switch for kilometers)</string>
+    <string name="pref_unit_kilometer">Kilometers</string>
+    <string name="pref_unit_miles">Miles</string>
+    <string name="pref_unit_using_celcius">Celsius (switch for Fahrenheit)</string>
+    <string name="pref_unit_using_fahrenheit">Fahrenheit (switch for Celsius)</string>
+    <string name="pref_unit_celsius">Celsius</string>
+    <string name="pref_unit_fahrenheit">Fahrenheit</string>
+    <string name="pref_unit_distance">Distance units</string>
+    <string name="pref_unit_temperature">Temperature units</string>
+    <string name="pref_category_units">Units</string>
+    <string name="pref_category_api">API</string>
+    <string name="pref_api_cockpit">Cockpit (odometer)</string>
+    <string name="pref_api_battery">Battery</string>
+    <string name="pref_api_using_v1">V1 (switch for V2)</string>
+    <string name="pref_api_using_v2">V2 (switch for V1)</string>
+    <string name="pref_api_v1">V1</string>
+    <string name="pref_api_v2">V2</string>
+</resources>
