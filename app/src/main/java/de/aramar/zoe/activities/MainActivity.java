@@ -5,15 +5,14 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.google.android.material.navigation.NavigationView;
+
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
-
-import com.google.android.material.navigation.NavigationView;
-
 import de.aramar.zoe.R;
 import de.aramar.zoe.security.LoginController;
 
@@ -44,6 +43,10 @@ public class MainActivity extends BaseActivity {
                 .getLoginController(this.getApplication())
                 .getLoginSaveCredentials()) {
             navController.navigate(R.id.nav_login);
+        } else {
+            LoginController
+                    .getLoginController(this.getApplication())
+                    .startLoginUser();
         }
     }
 

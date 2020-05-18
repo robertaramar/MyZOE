@@ -21,23 +21,21 @@ import android.widget.Switch;
 import android.widget.TableRow;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 
 import java.util.List;
 import java.util.Objects;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import de.aramar.zoe.R;
 import de.aramar.zoe.data.Summary;
 import de.aramar.zoe.data.kamereon.battery.Attributes;
 import de.aramar.zoe.data.kamereon.vehicles.Asset;
-import de.aramar.zoe.data.kamereon.vehicles.Rendition;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleLink;
 import de.aramar.zoe.network.BackendTraffic;
 import de.aramar.zoe.utilities.Tools;
@@ -110,19 +108,23 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         this.homeViewModel
                 .getVehicles()
                 .observe(this.getViewLifecycleOwner(), vehicles -> {
+                    Object[] zoes = Objects.requireNonNull(vehicles
+                            .getVehicleLinks()
+                            .stream()
+                            .filter(vehicleLink -> vehicleLink.getVehicleDetails()
+                                    .getModel()
+                                    .getLabel()
+                                    .compareToIgnoreCase("ZOE") == 0)
+                            .toArray());
                     ArrayAdapter<Object> vehiclesArrayAdapter =
                             new ArrayAdapter<>(HomeFragment.this.requireContext(),
                                     android.R.layout.simple_spinner_dropdown_item,
-                                    Objects.requireNonNull(vehicles
-                                            .getVehicleLinks()
-                                            .toArray()));
+                                    zoes);
                     vehiclesArrayAdapter.setDropDownViewResource(
                             android.R.layout.simple_spinner_dropdown_item);
                     HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
                     // Disable if there is only one entry
-                    HomeFragment.this.finSpinner.setEnabled(vehicles
-                            .getVehicleLinks()
-                            .size() > 1);
+                    HomeFragment.this.finSpinner.setEnabled(zoes.length > 1);
                 });
 
         this.swipeRefreshLayout.setRefreshing(true);
@@ -206,32 +208,32 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         List<Asset> assets = vehicle
                 .getVehicleDetails()
                 .getAssets();
-        for (int i = 0; i < assets.size(); i++) {
-            Asset asset = assets.get(i);
-            if (asset
-                    .getAssetType()
-                    .compareTo("PICTURE") == 0) {
-                List<Rendition> renditions = asset.getRenditions();
-                for (int j = 0; j < renditions.size(); j++) {
-                    Rendition rendition = renditions.get(j);
-                    if (rendition
-                            .getResolutionType()
-                            .compareTo("ONE_MYRENAULT_LARGE") == 0) {
-                        this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
-                            @Override
-                            public void onResponse(ImageLoader.ImageContainer response,
-                                                   boolean isImmediate) {
-                                HomeFragment.this.vehicleImage.setImageBitmap(response.getBitmap());
-                            }
+        if (assets != null) {
+            assets.stream()
+                    .filter(asset -> asset.getAssetType()
+                            .compareTo("PICTURE") == 0)
+                    .findFirst()
+                    .ifPresent(asset -> {
+                        asset.getRenditions()
+                                .stream()
+                                .filter(rendition -> rendition.getResolutionType()
+                                        .compareTo("ONE_MYRENAULT_LARGE") == 0)
+                                .findFirst()
+                                .ifPresent(rendition -> {
+                                    this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
+                                        @Override
+                                        public void onResponse(ImageLoader.ImageContainer response,
+                                                               boolean isImmediate) {
+                                            HomeFragment.this.vehicleImage.setImageBitmap(response.getBitmap());
+                                        }
 
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
+                                        @Override
+                                        public void onErrorResponse(VolleyError error) {
 
-                            }
-                        });
-                    }
-                }
-            }
+                                        }
+                                    });
+                                });
+                    });
         }
     }
 

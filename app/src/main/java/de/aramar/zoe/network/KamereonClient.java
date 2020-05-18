@@ -5,17 +5,16 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import androidx.annotation.MainThread;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
-
 import com.android.volley.Request;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
 import de.aramar.zoe.data.kamereon.cockpit.Cockpit;
 import de.aramar.zoe.data.kamereon.location.Location;
@@ -28,6 +27,7 @@ import de.aramar.zoe.data.security.KamereonData;
 import de.aramar.zoe.security.ConfigProvider;
 import de.aramar.zoe.security.GigyaProvider;
 import de.aramar.zoe.security.LoginController;
+import lombok.SneakyThrows;
 
 /**
  * Access to the Kamereon API.
@@ -239,6 +239,7 @@ public class KamereonClient {
      *
      * @param refresh true for refresh, false for inital login sequence
      */
+    @SneakyThrows
     public void getKamereonToken(final boolean refresh) {
         if (this.isLoginAvailable() && this.kamereonData.getPersons() != null) {
             Map<String, String> headers = new HashMap<>();
@@ -249,7 +250,11 @@ public class KamereonClient {
                             this.configData.getWiredTarget(), this.kamereonData
                                     .getPersons()
                                     .getAccounts()
-                                    .get(0)
+                                    .stream()
+                                    .filter(account -> account.getAccountType()
+                                            .compareToIgnoreCase("MYRENAULT") == 0)
+                                    .findFirst()
+                                    .orElseThrow(IllegalArgumentException::new)
                                     .getAccountId(), this.configData
                                     .getLocale()
                                     .getCountry());
@@ -275,6 +280,7 @@ public class KamereonClient {
     /**
      * Retrieve the Kamereon vehicle list.
      */
+    @SneakyThrows
     public void getVehicles() {
         if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
             Map<String, String> headers = new HashMap<>();
@@ -287,7 +293,11 @@ public class KamereonClient {
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()
-                            .get(0)
+                            .stream()
+                            .filter(account -> account.getAccountType()
+                                    .compareToIgnoreCase("MYRENAULT") == 0)
+                            .findFirst()
+                            .orElseThrow(IllegalArgumentException::new)
                             .getAccountId(), this.configData
                             .getLocale()
                             .getCountry());
@@ -310,6 +320,7 @@ public class KamereonClient {
     /**
      * Retrieve the Kamereon vehicle list.
      */
+    @SneakyThrows
     public void getBatteryStatus(final String vin) {
         if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
             Map<String, String> headers = new HashMap<>();
@@ -325,7 +336,11 @@ public class KamereonClient {
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()
-                            .get(0)
+                            .stream()
+                            .filter(account -> account.getAccountType()
+                                    .compareToIgnoreCase("MYRENAULT") == 0)
+                            .findFirst()
+                            .orElseThrow(IllegalArgumentException::new)
                             .getAccountId(), versionAPI, vin, this.configData
                             .getLocale()
                             .getCountry());
@@ -348,6 +363,7 @@ public class KamereonClient {
     /**
      * Retrieve the Kamereon vehicle list.
      */
+    @SneakyThrows
     public void getCockpit(String vin) {
         if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
             Map<String, String> headers = new HashMap<>();
@@ -363,7 +379,11 @@ public class KamereonClient {
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()
-                            .get(0)
+                            .stream()
+                            .filter(account -> account.getAccountType()
+                                    .compareToIgnoreCase("MYRENAULT") == 0)
+                            .findFirst()
+                            .orElseThrow(IllegalArgumentException::new)
                             .getAccountId(), versionAPI, vin, this.configData
                             .getLocale()
                             .getCountry());
@@ -386,6 +406,7 @@ public class KamereonClient {
     /**
      * Retrieve the Kamereon location.
      */
+    @SneakyThrows
     public void getLocation(String vin) {
         if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
             Map<String, String> headers = new HashMap<>();
@@ -399,7 +420,11 @@ public class KamereonClient {
                     this.configData.getWiredTarget(), this.kamereonData
                             .getPersons()
                             .getAccounts()
-                            .get(0)
+                            .stream()
+                            .filter(account -> account.getAccountType()
+                                    .compareToIgnoreCase("MYRENAULT") == 0)
+                            .findFirst()
+                            .orElseThrow(IllegalArgumentException::new)
                             .getAccountId(), vin, this.configData
                             .getLocale()
                             .getCountry());
