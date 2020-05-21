@@ -1,5 +1,16 @@
 # Changelog
 
+#### v0.1.6
+
+ * Add data timestamp to status screen (+ layout adjustments)
+ * Allow hiding VIN dropdown if only one vehicle
+ * Do not place a dummy ZOE on map (fix two ZOEs on map)
+
+#### v0.1.5
+
+ * Fix selecting account from multiple acconts
+ * Fix filtering vehicles to ZOEs only
+
 #### v0.1.4
 
  * New feature: About screen with libraries

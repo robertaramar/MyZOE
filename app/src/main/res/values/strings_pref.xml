@@ -12,10 +12,12 @@
     <string name="pref_unit_temperature">Temperature units</string>
     <string name="pref_category_units">Units</string>
     <string name="pref_category_api">API</string>
+    <string name="pref_category_ui">User interface</string>
     <string name="pref_api_cockpit">Cockpit (odometer)</string>
     <string name="pref_api_battery">Battery</string>
     <string name="pref_api_using_v1">V1 (switch for V2)</string>
     <string name="pref_api_using_v2">V2 (switch for V1)</string>
     <string name="pref_api_v1">V1</string>
     <string name="pref_api_v2">V2</string>
+    <string name="pref_ui_show_vin_spinner">VIN selection on one car</string>
 </resources>

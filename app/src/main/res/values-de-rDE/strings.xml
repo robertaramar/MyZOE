@@ -59,4 +59,5 @@
     <string name="action_about">Über</string>
     <string name="toast_copied_to_clipboard">In Zwischenablage kopiert</string>
     <string name="label_void">ungültig</string>
+    <string name="battery_timestamp_label">Zeitstempel</string>
 </resources>

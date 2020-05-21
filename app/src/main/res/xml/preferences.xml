@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/pref_category_ui">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="ui_show_vin_spinner"
+            android:title="@string/pref_ui_show_vin_spinner" />
+    </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_category_units">
         <SwitchPreference
             android:defaultValue="false"

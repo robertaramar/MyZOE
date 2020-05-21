@@ -61,4 +61,5 @@
     <string name="label_clipboard_content" translatable="false">MyZOE</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
     <string name="label_void">void</string>
+    <string name="battery_timestamp_label">Timestamp</string>
 </resources>

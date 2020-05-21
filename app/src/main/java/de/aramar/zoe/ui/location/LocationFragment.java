@@ -22,12 +22,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.List;
-import java.util.Locale;
 
 import de.aramar.zoe.R;
 import de.aramar.zoe.data.kamereon.location.Location;
@@ -36,7 +31,7 @@ import de.aramar.zoe.data.kamereon.vehicles.Rendition;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleDetails;
 import de.aramar.zoe.network.BackendTraffic;
 import de.aramar.zoe.ui.home.HomeViewModel;
-import lombok.SneakyThrows;
+import de.aramar.zoe.utilities.Tools;
 
 public class LocationFragment extends Fragment implements OnMapReadyCallback {
 
@@ -112,14 +107,6 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         this.mMap = googleMap;
         if (this.location != null) {
             this.setMarker(this.location);
-        } else {
-            // Add a marker in Waging
-            LatLng wagingPosition = new LatLng(47.944108, 12.7529453);
-            this.vehicleMarker = this.mMap.addMarker(new MarkerOptions()
-                    .position(wagingPosition)
-                    .title("ZOE"));
-            this.mMap.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(wagingPosition, 12.0f)); // TODO: settings
         }
     }
 
@@ -142,7 +129,7 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
                     .getGpsLongitude());
             this.vehicleMarker = this.mMap.addMarker(new MarkerOptions()
                     .position(zoePosition)
-                    .snippet(this.getLocalizedTimestamp(location
+                    .snippet(Tools.getLocalizedTimestamp(location
                             .getData()
                             .getAttributes()
                             .getLastUpdateTime()))
@@ -155,21 +142,6 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
             this.mMap.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(zoePosition, 15.0f)); // TODO: settings
         }
-    }
-
-    @SneakyThrows
-    private String getLocalizedTimestamp(String stringTimestamp) {
-        String formattedTimestamp = stringTimestamp;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            Instant instant = Instant.parse(stringTimestamp);
-            DateTimeFormatter formatter = DateTimeFormatter
-                    .ofLocalizedDateTime(FormatStyle.SHORT)
-                    .withLocale(Locale.getDefault())
-                    .withZone(ZoneId.systemDefault());
-            formattedTimestamp = formatter.format(instant);
-        }
-
-        return formattedTimestamp;
     }
 
     private void loadMarkerImage(final VehicleDetails vehicle) {

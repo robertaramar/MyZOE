@@ -31,4 +31,7 @@
     <dimen name="fab_recyclerview_padding">84dp
     </dimen> <!-- 52dp (FAB size) + 2x fab_base_vertical_offset) -->
 
+    <dimen name="home_title_margin">4dp</dimen>
+    <dimen name="home_text_margin_start">30dp</dimen>
+    <dimen name="home_text_margin">8dp</dimen>
 </resources>

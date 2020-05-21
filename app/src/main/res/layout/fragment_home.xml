@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/swipe_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:scrollbars="none">
 
-        <androidx.constraintlayout.widget.ConstraintLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <TableLayout
                 android:id="@+id/tableLayout"
@@ -55,9 +56,9 @@
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:layout_gravity="center_horizontal"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginStart="@dimen/home_title_margin"
+                        android:layout_marginTop="@dimen/home_title_margin"
+                        android:layout_marginEnd="@dimen/home_title_margin"
                         android:layout_span="2"
                         android:layout_weight="1"
                         android:text="@string/title_cockpit_information"
@@ -78,7 +79,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_margin="15dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/odometer_label" />
 
@@ -87,7 +90,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:layout_margin="15dp"
+                        android:layout_margin="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/unknown_value" />
 
@@ -103,8 +106,9 @@
                         android:layout_height="wrap_content"
                         android:layout_column="1"
                         android:layout_gravity="center_horizontal"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginStart="@dimen/home_title_margin"
+                        android:layout_marginTop="@dimen/home_title_margin"
+                        android:layout_marginEnd="@dimen/home_title_margin"
                         android:layout_span="2"
                         android:layout_weight="1"
                         android:text="@string/title_battery_status"
@@ -160,6 +164,34 @@
                 </FrameLayout>
 
                 <TableRow
+                    android:id="@+id/battery_timestamp_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/battery_timestamp_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
+                        android:layout_weight="1"
+                        android:text="@string/battery_timestamp_label" />
+
+                    <TextView
+                        android:id="@+id/battery_timestamp_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:layout_margin="@dimen/home_text_margin"
+                        android:layout_weight="1"
+                        android:text="@string/unknown_value" />
+
+                </TableRow>
+
+
+                <TableRow
                     android:layout_width="fill_parent"
                     android:layout_height="match_parent"
                     tools:layout_editor_absoluteX="1dp"
@@ -170,9 +202,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_plug_label" />
 
@@ -187,7 +219,7 @@
                             android:id="@+id/battery_plug_switch"
                             android:layout_width="wrap_content"
                             android:layout_height="0dp"
-                            android:layout_margin="10dp"
+                            android:layout_margin="@dimen/home_text_margin"
                             android:layout_weight="1" />
                     </LinearLayout>
 
@@ -202,9 +234,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_charge_label" />
 
@@ -219,7 +251,7 @@
                             android:id="@+id/battery_charge_switch"
                             android:layout_width="wrap_content"
                             android:layout_height="0dp"
-                            android:layout_margin="10dp"
+                            android:layout_margin="@dimen/home_text_margin"
                             android:layout_weight="1" />
 
                     </LinearLayout>
@@ -234,9 +266,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_temperature_label" />
 
@@ -245,7 +277,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:layout_margin="10dp"
+                        android:layout_margin="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/unknown_value" />
                 </TableRow>
@@ -259,9 +291,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_autonomy_label" />
 
@@ -270,7 +302,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:layout_margin="10dp"
+                        android:layout_margin="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/unknown_value" />
                 </TableRow>
@@ -284,9 +316,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_capacity_label" />
 
@@ -295,7 +327,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:layout_margin="10dp"
+                        android:layout_margin="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/unknown_value" />
                 </TableRow>
@@ -309,9 +341,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_energy_label" />
 
@@ -320,7 +352,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:layout_margin="10dp"
+                        android:layout_margin="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/unknown_value" />
                 </TableRow>
@@ -334,9 +366,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="1"
-                        android:layout_marginStart="15dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
+                        android:layout_marginStart="@dimen/home_text_margin_start"
+                        android:layout_marginTop="@dimen/home_text_margin"
+                        android:layout_marginBottom="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/battery_remaining_time_label" />
 
@@ -345,7 +377,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_column="2"
-                        android:layout_margin="10dp"
+                        android:layout_margin="@dimen/home_text_margin"
                         android:layout_weight="1"
                         android:text="@string/unknown_value" />
                 </TableRow>

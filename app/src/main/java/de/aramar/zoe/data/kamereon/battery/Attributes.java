@@ -10,9 +10,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.ToString;
 
 @Data
+@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ToString
 public class Attributes {

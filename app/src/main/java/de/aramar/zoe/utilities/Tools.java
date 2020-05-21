@@ -30,7 +30,13 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Locale;
+
+import lombok.SneakyThrows;
 
 public class Tools {
 
@@ -62,5 +68,19 @@ public class Tools {
                     .getSystem()
                     .getConfiguration().locale;
         }
+    }
+
+    @SneakyThrows
+    public static String getLocalizedTimestamp(String stringTimestamp) {
+        String formattedTimestamp = stringTimestamp;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            Instant instant = Instant.parse(stringTimestamp);
+            DateTimeFormatter formatter = DateTimeFormatter
+                    .ofLocalizedDateTime(FormatStyle.SHORT)
+                    .withLocale(Locale.getDefault())
+                    .withZone(ZoneId.systemDefault());
+            formattedTimestamp = formatter.format(instant);
+        }
+        return formattedTimestamp;
     }
 }

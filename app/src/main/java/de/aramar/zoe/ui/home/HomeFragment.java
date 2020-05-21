@@ -21,17 +21,18 @@ import android.widget.Switch;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 
 import java.util.List;
 import java.util.Objects;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import de.aramar.zoe.R;
 import de.aramar.zoe.data.Summary;
 import de.aramar.zoe.data.kamereon.battery.Attributes;
@@ -48,6 +49,8 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private HomeViewModel homeViewModel;
 
     private TextView odometerValueTextView;
+
+    private TextView batteryTimestampValue;
 
     private TextView batteryValueTextView;
 
@@ -84,6 +87,8 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      */
     private SharedPreferences defaultSharedPreferences;
 
+    private View batteryTimestampRow;
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -111,20 +116,32 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                     Object[] zoes = Objects.requireNonNull(vehicles
                             .getVehicleLinks()
                             .stream()
-                            .filter(vehicleLink -> vehicleLink.getVehicleDetails()
+                            .filter(vehicleLink -> vehicleLink
+                                    .getVehicleDetails()
                                     .getModel()
                                     .getLabel()
                                     .compareToIgnoreCase("ZOE") == 0)
                             .toArray());
                     ArrayAdapter<Object> vehiclesArrayAdapter =
                             new ArrayAdapter<>(HomeFragment.this.requireContext(),
-                                    android.R.layout.simple_spinner_dropdown_item,
-                                    zoes);
+                                    android.R.layout.simple_spinner_dropdown_item, zoes);
                     vehiclesArrayAdapter.setDropDownViewResource(
                             android.R.layout.simple_spinner_dropdown_item);
                     HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
-                    // Disable if there is only one entry
-                    HomeFragment.this.finSpinner.setEnabled(zoes.length > 1);
+                    if (zoes.length > 1) {
+                        HomeFragment.this.finSpinner.setEnabled(true);
+                        HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
+                    } else {
+                        if (this.defaultSharedPreferences.getBoolean("ui_show_vin_spinner",
+                                false)) {
+                            HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
+                            HomeFragment.this.finSpinner.setEnabled(false);
+                        } else {
+                            // Disable if there is only one entry
+                            HomeFragment.this.finSpinner.setVisibility(View.GONE);
+                            this.changeCar((VehicleLink) zoes[0]);
+                        }
+                    }
                 });
 
         this.swipeRefreshLayout.setRefreshing(true);
@@ -134,6 +151,9 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                              Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
         this.odometerValueTextView = root.findViewById(R.id.odometer_value);
+
+        this.batteryTimestampValue = root.findViewById(R.id.battery_timestamp_value);
+        this.batteryTimestampRow = root.findViewById(R.id.battery_timestamp_row);
         this.batteryValueTextView = root.findViewById(R.id.battery_level_value);
         this.batteryPlugSwitch = root.findViewById(R.id.battery_plug_switch);
         this.batteryPlugSwitch.setClickable(false);
@@ -209,29 +229,36 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                 .getVehicleDetails()
                 .getAssets();
         if (assets != null) {
-            assets.stream()
-                    .filter(asset -> asset.getAssetType()
+            assets
+                    .stream()
+                    .filter(asset -> asset
+                            .getAssetType()
                             .compareTo("PICTURE") == 0)
                     .findFirst()
                     .ifPresent(asset -> {
-                        asset.getRenditions()
+                        asset
+                                .getRenditions()
                                 .stream()
-                                .filter(rendition -> rendition.getResolutionType()
+                                .filter(rendition -> rendition
+                                        .getResolutionType()
                                         .compareTo("ONE_MYRENAULT_LARGE") == 0)
                                 .findFirst()
                                 .ifPresent(rendition -> {
-                                    this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
-                                        @Override
-                                        public void onResponse(ImageLoader.ImageContainer response,
-                                                               boolean isImmediate) {
-                                            HomeFragment.this.vehicleImage.setImageBitmap(response.getBitmap());
-                                        }
+                                    this.imageLoader.get(rendition.getUrl(),
+                                            new ImageLoader.ImageListener() {
+                                                @Override
+                                                public void onResponse(
+                                                        ImageLoader.ImageContainer response,
+                                                        boolean isImmediate) {
+                                                    HomeFragment.this.vehicleImage.setImageBitmap(
+                                                            response.getBitmap());
+                                                }
 
-                                        @Override
-                                        public void onErrorResponse(VolleyError error) {
+                                                @Override
+                                                public void onErrorResponse(VolleyError error) {
 
-                                        }
-                                    });
+                                                }
+                                            });
                                 });
                     });
         }
@@ -258,6 +285,14 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                     .getBattery()
                     .getData()
                     .getAttributes();
+
+            if (attributes.getTimestamp() != null) {
+                this.batteryTimestampValue.setText(
+                        Tools.getLocalizedTimestamp(attributes.getTimestamp()));
+                this.batteryTimestampRow.setVisibility(View.VISIBLE);
+            } else {
+                this.batteryTimestampRow.setVisibility(View.GONE);
+            }
 
             String batteryLevel = (attributes.getBatteryLevel() != null) ? String.format("%d%%",
                     attributes.getBatteryLevel()) : labelVoid;
@@ -297,13 +332,13 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
             int visibility = View.GONE;
             if (attributes.getBatteryCapacity() != null) {
                 this.batteryCapacityTextView.setText(
-                        String.format("%d kW/h", attributes.getBatteryCapacity()));
+                        String.format("%d kWh", attributes.getBatteryCapacity()));
                 visibility = attributes.getBatteryCapacity() > 0 ? View.VISIBLE : View.GONE;
             }
             this.capacityRow.setVisibility(visibility);
 
             String batteryEnergy =
-                    attributes.getBatteryAvailableEnergy() != null ? String.format("%d kW/h",
+                    attributes.getBatteryAvailableEnergy() != null ? String.format("%d kWh",
                             attributes.getBatteryAvailableEnergy()) : labelVoid;
             this.batteryEnergyTextView.setText(batteryEnergy);
 
