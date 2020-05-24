@@ -5,16 +5,17 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+
 import com.android.volley.Request;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-import androidx.annotation.MainThread;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
 import de.aramar.zoe.data.kamereon.cockpit.Cockpit;
 import de.aramar.zoe.data.kamereon.location.Location;
@@ -24,9 +25,12 @@ import de.aramar.zoe.data.kamereon.vehicles.Vehicles;
 import de.aramar.zoe.data.security.ConfigData;
 import de.aramar.zoe.data.security.GigyaData;
 import de.aramar.zoe.data.security.KamereonData;
+import de.aramar.zoe.data.security.SecurityData;
+import de.aramar.zoe.data.security.SecurityDataObservable;
 import de.aramar.zoe.security.ConfigProvider;
 import de.aramar.zoe.security.GigyaProvider;
 import de.aramar.zoe.security.LoginController;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.SneakyThrows;
 
 /**
@@ -79,6 +83,11 @@ public class KamereonClient {
     private MutableLiveData<Location> mLocationResponse;
 
     /**
+     * The live data for Gigya
+     */
+    private LiveData<GigyaData> mGigyaData;
+
+    /**
      * Kamereon security data.
      */
     private KamereonData kamereonData;
@@ -119,6 +128,11 @@ public class KamereonClient {
     private Application application;
 
     /**
+     * All we need to call Kamereon authenticated.
+     */
+    private SecurityData securityData;
+
+    /**
      * Private constructor to prevent instantiating more than THE singleton.
      */
     private KamereonClient(@NonNull Application application) {
@@ -134,14 +148,22 @@ public class KamereonClient {
         this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(
                 this.application.getApplicationContext());
 
+        // Make sure we always have the latest and greatest security data.
+        SecurityDataObservable
+                .getObservable()
+                .subscribeOn(Schedulers.io())
+                .subscribe(newSecurityData -> this.securityData = newSecurityData);
+
         ConfigProvider
-                .getConfig(application)
+                .getConfigProvider(application)
                 .getConfigLiveData()
                 .observeForever(configData -> KamereonClient.this.configData = configData);
-        GigyaProvider
+
+        this.mGigyaData = GigyaProvider
                 .getGigya(application)
-                .getGigyaLiveData()
-                .observeForever(gigyaData -> KamereonClient.this.gigyaData = gigyaData);
+                .getGigyaLiveData();
+
+        this.mGigyaData.observeForever(gigyaData -> KamereonClient.this.gigyaData = gigyaData);
     }
 
     /**
@@ -206,10 +228,10 @@ public class KamereonClient {
      * Retrieve the persons from Commerce to obtain the account ID.
      */
     public void getKamereonPersons() {
-        if (this.isLoginAvailable()) {
+        if (this.securityData != null && !this.securityData.isGigyaJwtExpired()) {
             Map<String, String> headers = new HashMap<>();
-            headers.put("apikey", this.configData.getWiredApiKey());
-            headers.put("x-gigya-id_token", this.gigyaData.getJwt());
+            headers.put("apikey", this.securityData.getWiredApiKey());
+            headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
             String url = MessageFormat.format("{0}/commerce/v1/persons/{1}?country={2}",
                     this.configData.getWiredTarget(), this.gigyaData.getPersonId(), this.configData
                             .getLocale()
@@ -241,39 +263,36 @@ public class KamereonClient {
      */
     @SneakyThrows
     public void getKamereonToken(final boolean refresh) {
-        if (this.isLoginAvailable() && this.kamereonData.getPersons() != null) {
-            Map<String, String> headers = new HashMap<>();
-            headers.put("apikey", this.configData.getWiredApiKey());
-            headers.put("x-gigya-id_token", this.gigyaData.getJwt());
-            String url =
-                    MessageFormat.format("{0}/commerce/v1/accounts/{1}/kamereon/token?country={2}",
-                            this.configData.getWiredTarget(), this.kamereonData
-                                    .getPersons()
-                                    .getAccounts()
-                                    .stream()
-                                    .filter(account -> account.getAccountType()
-                                            .compareToIgnoreCase("MYRENAULT") == 0)
-                                    .findFirst()
-                                    .orElseThrow(IllegalArgumentException::new)
-                                    .getAccountId(), this.configData
-                                    .getLocale()
-                                    .getCountry());
+        if (this.securityData != null && this.securityData.getAccountId() != null) {
+            if (this.securityData.isKamereonJwtExpired()) {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", this.securityData.getWiredApiKey());
+                headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                String url = MessageFormat.format(
+                        "{0}/commerce/v1/accounts/{1}/kamereon/token?country={2}",
+                        this.configData.getWiredTarget(), this.securityData.getAccountId(),
+                        this.configData
+                                .getLocale()
+                                .getCountry());
 
-            JacksonRequest<Token> request =
-                    new JacksonRequest<>(Request.Method.GET, url, headers, null, Token.class,
-                            response -> {
-                                KamereonClient.this.kamereonData.setToken(response);
-                                Log.d(TAG,
-                                        "token = " + KamereonClient.this.kamereonData.getToken());
-                                KamereonClient.this.kamereonData.setStatus(
-                                        (refresh) ? KamereonData.KamereonStatus.JWT_REFRESHED : KamereonData.KamereonStatus.JWT_AVAILABLE);
-                                KamereonClient.this.mKamereonData.postValue(
-                                        KamereonClient.this.kamereonData);
-                            }, error -> {
-                        Log.d(TAG, "error on Kamereon token response = " + error.toString());
-                        KamereonClient.this.triggerReauthentication();
-                    });
-            this.backendTraffic.addToRequestQueue(request);
+                JacksonRequest<Token> request =
+                        new JacksonRequest<>(Request.Method.GET, url, headers, null, Token.class,
+                                response -> {
+                                    KamereonClient.this.kamereonData.setToken(response);
+                                    Log.d(TAG,
+                                            "token = " + KamereonClient.this.kamereonData.getToken());
+                                    KamereonClient.this.kamereonData.setStatus(
+                                            (refresh) ? KamereonData.KamereonStatus.JWT_REFRESHED : KamereonData.KamereonStatus.JWT_AVAILABLE);
+                                    KamereonClient.this.mKamereonData.postValue(
+                                            KamereonClient.this.kamereonData);
+                                }, error -> {
+                            Log.d(TAG, "error on Kamereon token response = " + error.toString());
+                            KamereonClient.this.triggerReauthentication();
+                        });
+                this.backendTraffic.addToRequestQueue(request);
+            }
+        } else {
+            KamereonClient.this.mKamereonData.postValue(KamereonClient.this.kamereonData);
         }
     }
 
@@ -282,23 +301,14 @@ public class KamereonClient {
      */
     @SneakyThrows
     public void getVehicles() {
-        if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
+        if (this.securityData != null && !this.securityData.isJwtExpired()) {
             Map<String, String> headers = new HashMap<>();
-            headers.put("apikey", this.configData.getWiredApiKey());
-            headers.put("x-gigya-id_token", this.gigyaData.getJwt());
-            headers.put("x-kamereon-authorization", "Bearer " + this.kamereonData
-                    .getToken()
-                    .getAccessToken());
+            headers.put("apikey", this.securityData.getWiredApiKey());
+            headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+            headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String url = MessageFormat.format("{0}/commerce/v1/accounts/{1}/vehicles?country={2}",
-                    this.configData.getWiredTarget(), this.kamereonData
-                            .getPersons()
-                            .getAccounts()
-                            .stream()
-                            .filter(account -> account.getAccountType()
-                                    .compareToIgnoreCase("MYRENAULT") == 0)
-                            .findFirst()
-                            .orElseThrow(IllegalArgumentException::new)
-                            .getAccountId(), this.configData
+                    this.configData.getWiredTarget(), this.securityData.getAccountId(),
+                    this.configData
                             .getLocale()
                             .getCountry());
 
@@ -314,6 +324,8 @@ public class KamereonClient {
                         KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
+        } else {
+            KamereonClient.this.mVehicles.postValue(KamereonClient.this.vehicles);
         }
     }
 
@@ -322,26 +334,17 @@ public class KamereonClient {
      */
     @SneakyThrows
     public void getBatteryStatus(final String vin) {
-        if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
+        if (this.securityData != null && !this.securityData.isJwtExpired()) {
             Map<String, String> headers = new HashMap<>();
-            headers.put("apikey", this.configData.getWiredApiKey());
-            headers.put("x-gigya-id_token", this.gigyaData.getJwt());
-            headers.put("x-kamereon-authorization", "Bearer " + this.kamereonData
-                    .getToken()
-                    .getAccessToken());
+            headers.put("apikey", this.securityData.getWiredApiKey());
+            headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+            headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String versionAPI =
                     this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/battery-status?country={4}",
-                    this.configData.getWiredTarget(), this.kamereonData
-                            .getPersons()
-                            .getAccounts()
-                            .stream()
-                            .filter(account -> account.getAccountType()
-                                    .compareToIgnoreCase("MYRENAULT") == 0)
-                            .findFirst()
-                            .orElseThrow(IllegalArgumentException::new)
-                            .getAccountId(), versionAPI, vin, this.configData
+                    this.configData.getWiredTarget(), this.securityData.getAccountId(), versionAPI,
+                    vin, this.configData
                             .getLocale()
                             .getCountry());
 
@@ -357,6 +360,8 @@ public class KamereonClient {
                         KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
+        } else {
+            KamereonClient.this.mBatteryResponse.postValue(KamereonClient.this.batteryResponse);
         }
     }
 
@@ -365,26 +370,17 @@ public class KamereonClient {
      */
     @SneakyThrows
     public void getCockpit(String vin) {
-        if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
+        if (this.securityData != null && !this.securityData.isJwtExpired()) {
             Map<String, String> headers = new HashMap<>();
-            headers.put("apikey", this.configData.getWiredApiKey());
-            headers.put("x-gigya-id_token", this.gigyaData.getJwt());
-            headers.put("x-kamereon-authorization", "Bearer " + this.kamereonData
-                    .getToken()
-                    .getAccessToken());
+            headers.put("apikey", this.securityData.getWiredApiKey());
+            headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+            headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String versionAPI =
                     this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/cockpit?country={4}",
-                    this.configData.getWiredTarget(), this.kamereonData
-                            .getPersons()
-                            .getAccounts()
-                            .stream()
-                            .filter(account -> account.getAccountType()
-                                    .compareToIgnoreCase("MYRENAULT") == 0)
-                            .findFirst()
-                            .orElseThrow(IllegalArgumentException::new)
-                            .getAccountId(), versionAPI, vin, this.configData
+                    this.configData.getWiredTarget(), this.securityData.getAccountId(), versionAPI,
+                    vin, this.configData
                             .getLocale()
                             .getCountry());
 
@@ -400,6 +396,8 @@ public class KamereonClient {
                         KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
+        } else {
+            KamereonClient.this.mCockpitResponse.postValue(KamereonClient.this.cockpitResponse);
         }
     }
 
@@ -408,24 +406,15 @@ public class KamereonClient {
      */
     @SneakyThrows
     public void getLocation(String vin) {
-        if (this.isLoginAvailable() && this.kamereonData.getPersons() != null && this.kamereonData.getToken() != null) {
+        if (this.securityData != null && !this.securityData.isJwtExpired()) {
             Map<String, String> headers = new HashMap<>();
-            headers.put("apikey", this.configData.getWiredApiKey());
-            headers.put("x-gigya-id_token", this.gigyaData.getJwt());
-            headers.put("x-kamereon-authorization", "Bearer " + this.kamereonData
-                    .getToken()
-                    .getAccessToken());
+            headers.put("apikey", this.securityData.getWiredApiKey());
+            headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+            headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/location?country={3}",
-                    this.configData.getWiredTarget(), this.kamereonData
-                            .getPersons()
-                            .getAccounts()
-                            .stream()
-                            .filter(account -> account.getAccountType()
-                                    .compareToIgnoreCase("MYRENAULT") == 0)
-                            .findFirst()
-                            .orElseThrow(IllegalArgumentException::new)
-                            .getAccountId(), vin, this.configData
+                    this.configData.getWiredTarget(), this.securityData.getAccountId(), vin,
+                    this.configData
                             .getLocale()
                             .getCountry());
 
@@ -441,6 +430,9 @@ public class KamereonClient {
                         KamereonClient.this.triggerReauthentication();
                     });
             this.backendTraffic.addToRequestQueue(request);
+        } else {
+            // just report back whatever was there to stop the spinner.
+            KamereonClient.this.mLocationResponse.postValue(KamereonClient.this.locationResponse);
         }
     }
 
@@ -459,6 +451,6 @@ public class KamereonClient {
      * @return true if all infos are available
      */
     private boolean isLoginAvailable() {
-        return this.configData != null && this.configData.isValid() && this.gigyaData != null && this.gigyaData.isValid();
+        return this.configData != null && this.configData.isValid() && this.securityData != null && this.gigyaData.isValid();
     }
 }

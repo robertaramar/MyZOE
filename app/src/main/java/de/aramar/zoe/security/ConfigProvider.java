@@ -12,8 +12,8 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.JsonRequest;
+import com.android.volley.toolbox.RequestFuture;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.MessageFormat;
@@ -21,6 +21,8 @@ import java.util.Locale;
 
 import de.aramar.zoe.data.security.ConfigData;
 import de.aramar.zoe.network.BackendTraffic;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class ConfigProvider {
     /**
@@ -51,7 +53,7 @@ public class ConfigProvider {
 
     private MutableLiveData<ConfigData> configLiveData;
 
-    private ConfigData configData;
+    private Observable<ConfigData> configDataObservable;
 
     /**
      * Private constructor to prevent instantiating more than THE singleton.
@@ -61,8 +63,6 @@ public class ConfigProvider {
                 .getInstance(application.getApplicationContext())
                 .getRequestQueue();
         this.configLiveData = new MutableLiveData<>();
-        this.configData = new ConfigData();
-        this.configLiveData.setValue(this.configData);
     }
 
     /**
@@ -71,7 +71,7 @@ public class ConfigProvider {
      * @return Config
      */
     @MainThread
-    public static ConfigProvider getConfig(@NonNull Application application) {
+    public static ConfigProvider getConfigProvider(@NonNull Application application) {
         if (sConfigProvider == null) {
             sConfigProvider = new ConfigProvider(application);
         }
@@ -88,56 +88,47 @@ public class ConfigProvider {
     }
 
     /**
-     * Method to retrieve API tokens and URLs from the Renault system.
+     * Getter for the ConfigData single.
+     * Triggers loading on first call.
      *
-     * @param locale like de_DE, en_GB, fr_FR
+     * @return configDataSingle
      */
-    void loadConfigData(Locale locale) {
-        this.configData.setLocale(locale);
+    Observable<ConfigData> getConfigData(Locale locale) {
+        RequestFuture<JSONObject> future = RequestFuture.newFuture();
         final String url = MessageFormat.format(TOKEN_PROD_SERVER + TOKEN_PATH, locale.toString());
         // clear all data, we are starting fresh
         JsonRequest<JSONObject> jsonObjectRequest =
-                new JsonObjectRequest(Request.Method.GET, url, null, response -> {
-                    Log.i(TAG, "Response: " + response.toString());
-                    try {
-                        String string = response
-                                .getJSONObject("servers")
-                                .getJSONObject("wiredProd")
-                                .getString("target");
-                        ConfigProvider.this.configData.setWiredTarget(string);
-                        string = response
-                                .getJSONObject("servers")
-                                .getJSONObject("wiredProd")
-                                .getString("apikey");
-                        ConfigProvider.this.configData.setWiredApiKey(string);
-                        string = response
-                                .getJSONObject("servers")
-                                .getJSONObject("gigyaProd")
-                                .getString("target");
-                        ConfigProvider.this.configData.setGigyaTarget(string);
-                        string = response
-                                .getJSONObject("servers")
-                                .getJSONObject("gigyaProd")
-                                .getString("apikey");
-                        ConfigProvider.this.configData.setGigyaApiKey(string);
-                        ConfigProvider.this.configLiveData.postValue(
-                                ConfigProvider.this.configData);
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Invalid JSON response", e.getCause());
-                        ConfigProvider.this.configData.setErrorText(
-                                "Invalid JSON response " + e.getMessage());
-                        ConfigProvider.this.configData.setError(true);
-                        ConfigProvider.this.configLiveData.postValue(
-                                ConfigProvider.this.configData);
-                    }
-                }, error -> {
-                    String logMessage = "Invalid JSON response " + error.getMessage();
-                    Log.d(TAG, logMessage);
-                    Log.e(TAG, "requrest failed:", error.getCause());
-                    ConfigProvider.this.configData.setErrorText(logMessage);
-                    ConfigProvider.this.configData.setError(true);
-                    ConfigProvider.this.configLiveData.postValue(ConfigProvider.this.configData);
-                });
+                new JsonObjectRequest(Request.Method.GET, url, null, future, future);
         this.queue.add(jsonObjectRequest);
+        this.configDataObservable = Observable
+                .fromFuture(future)
+                .flatMap(jsonObject -> {
+                    ConfigData configData = new ConfigData();
+                    JSONObject wiredProd = jsonObject
+                            .getJSONObject("servers")
+                            .getJSONObject("wiredProd");
+                    configData.setWiredTarget(wiredProd.getString("target"));
+                    configData.setWiredApiKey(wiredProd.getString("apikey"));
+                    JSONObject gigyaProd = jsonObject
+                            .getJSONObject("servers")
+                            .getJSONObject("gigyaProd");
+                    configData.setGigyaTarget(gigyaProd.getString("target"));
+                    configData.setGigyaApiKey(gigyaProd.getString("apikey"));
+                    return Observable.just(configData);
+                });
+        this.configDataObservable
+                .subscribeOn(Schedulers.io())
+                .subscribe(configData -> {
+                    Log.d(TAG, "Received ConfigData response " + configData);
+                    configData.setLocale(locale);
+                    ConfigProvider.this.configLiveData.postValue(configData);
+                }, throwable -> {
+                    Log.e(TAG, "Invalid JSON response", throwable.getCause());
+                    ConfigData configData = new ConfigData();
+                    configData.setErrorText("Invalid JSON response " + throwable.getMessage());
+                    configData.setError(true);
+                    ConfigProvider.this.configLiveData.postValue(configData);
+                });
+        return this.configDataObservable;
     }
 }

@@ -3,11 +3,13 @@ package de.aramar.zoe.data.security;
 import java.util.Locale;
 
 import lombok.Data;
+import lombok.ToString;
 
 /**
  * Data obtained from config_<country>.json.
  */
 @Data
+@ToString
 public class ConfigData {
     /**
      * They WIRED target URL, obtained from /config_<country>.json.
@@ -54,6 +56,6 @@ public class ConfigData {
      * @return true if valid
      */
     public boolean isValid() {
-        return this.wiredApiKey != null && this.wiredTarget != null && this.gigyaApiKey != null && this.gigyaTarget != null;
+        return this.locale != null && this.wiredApiKey != null && this.wiredTarget != null && this.gigyaApiKey != null && this.gigyaTarget != null;
     }
 }

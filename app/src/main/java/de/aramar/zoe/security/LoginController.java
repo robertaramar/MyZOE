@@ -14,10 +14,12 @@ import com.auth0.android.jwt.JWT;
 
 import java.util.Locale;
 
+import de.aramar.zoe.data.kamereon.persons.Account;
 import de.aramar.zoe.data.security.ConfigData;
 import de.aramar.zoe.data.security.GigyaData;
 import de.aramar.zoe.data.security.KamereonData;
 import de.aramar.zoe.data.security.SecurityData;
+import de.aramar.zoe.data.security.SecurityDataObservable;
 import de.aramar.zoe.data.security.SecurityStatus;
 import de.aramar.zoe.network.KamereonClient;
 
@@ -41,6 +43,12 @@ import de.aramar.zoe.network.KamereonClient;
  * </ul>
  */
 public class LoginController extends AndroidViewModel {
+
+    /**
+     * Tag for logging data.
+     */
+    private static final String TAG = LoginController.class.getCanonicalName();
+
     /**
      * Key to obtain boolean that indicates whether credentials should be stored.
      */
@@ -112,7 +120,7 @@ public class LoginController extends AndroidViewModel {
         this.liveSecurityDataContainer = new MutableLiveData<>();
         this.liveSecurityDataContainer.setValue(this.securityData);
 
-        this.configProvider = ConfigProvider.getConfig(application);
+        this.configProvider = ConfigProvider.getConfigProvider(application);
         LiveData<ConfigData> liveConfigData = this.configProvider.getConfigLiveData();
 
         this.gigyaProvider = GigyaProvider.getGigya(application);
@@ -134,6 +142,8 @@ public class LoginController extends AndroidViewModel {
                         .getApplication()
                         .getResources()
                         .getString(SecurityStatus.API_TOKENS_AVAILABLE.getOkStatusTextId()));
+                LoginController.this.securityData.setWiredApiKey(configData.getWiredApiKey());
+                LoginController.this.securityData.setGigyaApiKey(configData.getGigyaApiKey());
                 LoginController.this.securityData.setStatus(SecurityStatus.API_TOKENS_AVAILABLE);
                 LoginController.this.startLoginUser();
             } else {
@@ -143,6 +153,7 @@ public class LoginController extends AndroidViewModel {
                         .getString(SecurityStatus.EMPTY.getOkStatusTextId()));
                 LoginController.this.securityData.setStatus(SecurityStatus.EMPTY);
             }
+            SecurityDataObservable.publish(LoginController.this.securityData);
             LoginController.this.liveSecurityDataContainer.postValue(
                     LoginController.this.securityData);
         });
@@ -163,9 +174,12 @@ public class LoginController extends AndroidViewModel {
                                 .getResources()
                                 .getString(
                                         SecurityStatus.GIGYA_SESSION_AVAILABLE.getOkStatusTextId()));
+                        LoginController.this.securityData.setGigyaSessionToken(
+                                gigyaData.getSessionCookie());
                         LoginController.this.securityData.setStatus(
                                 SecurityStatus.GIGYA_SESSION_AVAILABLE);
                         LoginController.this.gigyaProvider.getGigyaJwt(false);
+                        SecurityDataObservable.publish(LoginController.this.securityData);
                         break;
                     case JWT_AVAILABLE:
                     case JWT_REFRESHED:
@@ -196,6 +210,7 @@ public class LoginController extends AndroidViewModel {
                         break;
                 }
             }
+            SecurityDataObservable.publish(LoginController.this.securityData);
             LoginController.this.liveSecurityDataContainer.postValue(
                     LoginController.this.securityData);
         });
@@ -218,6 +233,18 @@ public class LoginController extends AndroidViewModel {
                                         SecurityStatus.KAMEREON_PERSON_AVAILABLE.getOkStatusTextId()));
                         LoginController.this.securityData.setStatus(
                                 SecurityStatus.KAMEREON_PERSON_AVAILABLE);
+                        String accountId = kamereonData
+                                .getPersons()
+                                .getAccounts()
+                                .stream()
+                                .filter(account -> account
+                                        .getAccountType()
+                                        .compareToIgnoreCase("MYRENAULT") == 0)
+                                .findFirst()
+                                // .orElseThrow(IllegalArgumentException::new)
+                                .orElse(new Account()) // hm, need to see if that goes away when all is Observable
+                                .getAccountId();
+                        this.securityData.setAccountId(accountId);
                         LoginController.this.kamereonClient.getKamereonToken(false);
                         break;
                     case JWT_AVAILABLE:
@@ -240,6 +267,7 @@ public class LoginController extends AndroidViewModel {
                 }
             LoginController.this.liveSecurityDataContainer.postValue(
                     LoginController.this.securityData);
+            SecurityDataObservable.publish(LoginController.this.securityData);
         });
     }
 
@@ -273,7 +301,7 @@ public class LoginController extends AndroidViewModel {
     public void loadConfig(Locale locale) {
         // clear all data, we are starting fresh
         this.securityData.clear();
-        this.configProvider.loadConfigData(locale);
+        this.configProvider.getConfigData(locale);
     }
 
     /**

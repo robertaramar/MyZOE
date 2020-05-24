@@ -18,9 +18,4 @@ public class Summary {
      * ZOE's cockpit.
      */
     private Cockpit cockpit;
-
-    /**
-     * ZOE's location.
-     */
-    private LocationResponse location;
 }

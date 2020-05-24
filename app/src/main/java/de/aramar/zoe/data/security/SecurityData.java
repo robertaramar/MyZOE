@@ -1,5 +1,7 @@
 package de.aramar.zoe.data.security;
 
+import com.auth0.android.jwt.JWT;
+
 import lombok.Data;
 
 @Data
@@ -16,14 +18,72 @@ public class SecurityData {
     private SecurityStatus status = SecurityStatus.EMPTY;
 
     /**
-     * Current Gigya JWT.
+     * ConfigData (Kamereon) Wired API key.
      */
-    private String gigyaJwt;
+    private String wiredApiKey;
 
     /**
      * Current Kamereon JWT.
      */
     private String kamereonJwt;
+
+    /**
+     * The Kamereon account ID of the MYRENAULT account.
+     */
+    private String accountId;
+
+    /**
+     * ConfigData Gigya session token key.
+     */
+    private String gigyaSessionToken;
+
+    /**
+     * ConfigData Gigya API key.
+     */
+    private String gigyaApiKey;
+
+    /**
+     * Current Gigya JWT.
+     */
+    private String gigyaJwt;
+
+    /**
+     * Test for Gigya JWT expiration.
+     *
+     * @return true if expired or expires within 10 seconds
+     */
+    public boolean isGigyaJwtExpired() {
+        if (this.gigyaJwt != null) {
+            JWT gigyaJWT = new JWT(this.gigyaJwt);
+            return gigyaJWT.isExpired(10);
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Test for Kamereon JWT expiration.
+     *
+     * @return true if expired or expires within 10 seconds
+     */
+    public boolean isKamereonJwtExpired() {
+        if (this.kamereonJwt != null) {
+            JWT kamereonJWT = new JWT(this.kamereonJwt);
+            return kamereonJWT.isExpired(10);
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Test for either Gigya or Kamereon JWT expiration.
+     *
+     * @return true if either JWT is expired
+     */
+    public boolean isJwtExpired() {
+        return this.isGigyaJwtExpired() || this.isKamereonJwtExpired();
+    }
+
 
     /**
      * Utility method to append a text to the current text.

@@ -1,5 +1,7 @@
 package de.aramar.zoe.data.security;
 
+import com.auth0.android.jwt.JWT;
+
 import lombok.Data;
 
 /**
@@ -47,6 +49,15 @@ public class GigyaData {
      */
     public boolean isValid() {
         return this.jwt != null && this.personId != null && this.sessionCookie != null;
+    }
+
+    public boolean isJwtExpired() {
+        if (this.jwt != null) {
+            JWT gigyaJwt = new JWT(this.jwt);
+            return gigyaJwt.isExpired(10);
+        } else {
+            return true;
+        }
     }
 
     public enum GigyaStatus {

@@ -63,7 +63,7 @@ public class GigyaProvider {
         this.gigyaLiveData = new MutableLiveData<>();
 
         ConfigProvider
-                .getConfig(application)
+                .getConfigProvider(application)
                 .getConfigLiveData()
                 .observeForever(configData -> GigyaProvider.this.configData = configData);
     }
@@ -122,17 +122,22 @@ public class GigyaProvider {
      */
     void getGigyaJwt(final boolean refresh) {
         if (this.configData != null && this.configData.isValid()) {
-            Map<String, String> params = new HashMap<>();
-            params.put("oauth_token", this.gigyaData.getSessionCookie());
-            params.put("fields", "data.personId,data.gigyaDataCenter");
-            params.put("expiration", "900");
-            this.getDataFromGigyaFramework(Request.Method.POST, "getJWT", null, params,
-                    response -> {
-                        GigyaProvider.this.gigyaData.setJwt(response.getString("id_token"));
-                        GigyaProvider.this.gigyaData.setStatus(
-                                (refresh) ? GigyaData.GigyaStatus.JWT_REFRESHED : GigyaData.GigyaStatus.JWT_AVAILABLE);
-                        GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
-                    });
+            if (this.gigyaData.isJwtExpired()) {
+                Map<String, String> params = new HashMap<>();
+                params.put("oauth_token", this.gigyaData.getSessionCookie());
+                params.put("fields", "data.personId,data.gigyaDataCenter");
+                params.put("expiration", "900");
+                this.getDataFromGigyaFramework(Request.Method.POST, "getJWT", null, params,
+                        response -> {
+                            GigyaProvider.this.gigyaData.setJwt(response.getString("id_token"));
+                            GigyaProvider.this.gigyaData.setStatus(
+                                    (refresh) ? GigyaData.GigyaStatus.JWT_REFRESHED : GigyaData.GigyaStatus.JWT_AVAILABLE);
+                            GigyaProvider.this.gigyaLiveData.postValue(
+                                    GigyaProvider.this.gigyaData);
+                        });
+            }
+        } else {
+            GigyaProvider.this.gigyaLiveData.postValue(GigyaProvider.this.gigyaData);
         }
     }
 

@@ -1,5 +1,7 @@
 package de.aramar.zoe.data.security;
 
+import com.auth0.android.jwt.JWT;
+
 import de.aramar.zoe.data.kamereon.persons.Persons;
 import de.aramar.zoe.data.kamereon.token.Token;
 import lombok.Data;
@@ -26,11 +28,6 @@ public class KamereonData {
     private Token token;
 
     /**
-     * The JWT obtained from Kamereon
-     */
-    private String jwt;
-
-    /**
      * Indicates an error when retrieving data.
      */
     private boolean error;
@@ -39,6 +36,16 @@ public class KamereonData {
      * Description, log entry of last error.
      */
     private String errorText;
+
+    public boolean isJwtExpired() {
+        if (this.token != null) {
+            JWT kamereonJwt = new JWT(this.token.getAccessToken());
+            return kamereonJwt.isExpired(10);
+        } else {
+            return true;
+        }
+    }
+
 
     public enum KamereonStatus {
         EMTPY, PERSON_AVAILABLE, JWT_AVAILABLE, JWT_REFRESHED
