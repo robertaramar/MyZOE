@@ -29,14 +29,14 @@ import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
+import android.util.Log;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
-
-import lombok.SneakyThrows;
 
 public class Tools {
 
@@ -70,16 +70,25 @@ public class Tools {
         }
     }
 
-    @SneakyThrows
     public static String getLocalizedTimestamp(String stringTimestamp) {
         String formattedTimestamp = stringTimestamp;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            Instant instant = Instant.parse(stringTimestamp);
-            DateTimeFormatter formatter = DateTimeFormatter
-                    .ofLocalizedDateTime(FormatStyle.SHORT)
-                    .withLocale(Locale.getDefault())
-                    .withZone(ZoneId.systemDefault());
-            formattedTimestamp = formatter.format(instant);
+            try { // Fixes bug #3
+                DateTimeFormatter formatter = DateTimeFormatter
+                        .ofLocalizedDateTime(FormatStyle.SHORT)
+                        .withLocale(Locale.getDefault())
+                        .withZone(ZoneId.systemDefault());
+                if (stringTimestamp.contains("Z")) { // Ph2 seems to report zulu time
+                    Instant instant = Instant.parse(stringTimestamp);
+                    formattedTimestamp = formatter.format(instant);
+                } else { // Ph1 seems to report offset date time
+                    OffsetDateTime offsetDateTime = OffsetDateTime.parse(stringTimestamp);
+                    formattedTimestamp = formatter.format(offsetDateTime);
+                }
+            } catch (Exception e) {
+                Log.d(Tools.class.getCanonicalName(),
+                        "Cannot parse timestamp of " + stringTimestamp);
+            }
         }
         return formattedTimestamp;
     }

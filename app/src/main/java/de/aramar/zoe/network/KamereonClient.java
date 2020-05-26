@@ -340,7 +340,7 @@ public class KamereonClient {
             headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
             headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String versionAPI =
-                    this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
+                    this.defaultSharedPreferences.getBoolean("api_battery_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/battery-status?country={4}",
                     this.configData.getWiredTarget(), this.securityData.getAccountId(), versionAPI,
