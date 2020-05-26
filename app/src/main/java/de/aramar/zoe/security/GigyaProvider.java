@@ -20,9 +20,11 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import de.aramar.zoe.data.security.ConfigData;
 import de.aramar.zoe.data.security.GigyaData;
+import de.aramar.zoe.data.security.SecurityData;
+import de.aramar.zoe.data.security.SecurityDataObservable;
 import de.aramar.zoe.network.BackendTraffic;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class GigyaProvider {
     /**
@@ -51,9 +53,9 @@ public class GigyaProvider {
     private GigyaData gigyaData;
 
     /**
-     * Local version of ConfigData, required to get API keys and URLs.
+     * All we need to call Kamereon authenticated.
      */
-    private ConfigData configData;
+    private SecurityData securityData;
 
     /**
      * Private constructor to prevent instantiating more than THE singleton.
@@ -62,10 +64,11 @@ public class GigyaProvider {
         this.backendTraffic = BackendTraffic.getInstance(application.getApplicationContext());
         this.gigyaLiveData = new MutableLiveData<>();
 
-        ConfigProvider
-                .getConfigProvider(application)
-                .getConfigLiveData()
-                .observeForever(configData -> GigyaProvider.this.configData = configData);
+        // Make sure we always have the latest and greatest security data.
+        SecurityDataObservable
+                .getObservable()
+                .subscribeOn(Schedulers.io())
+                .subscribe(newSecurityData -> this.securityData = newSecurityData);
     }
 
     /**
@@ -98,10 +101,10 @@ public class GigyaProvider {
      * @param password password for user
      */
     void getGigyaSession(final String username, final String password) {
-        if (this.configData != null && this.configData.isValid()) {
+        if (this.securityData != null && this.securityData.getGigyaApiKey() != null) {
             this.gigyaData = new GigyaData();
             Map<String, String> params = new HashMap<>();
-            params.put("ApiKey", this.configData.getGigyaApiKey());
+            params.put("ApiKey", this.securityData.getGigyaApiKey());
             params.put("loginID", username);
             params.put("password", password);
             this.getDataFromGigyaFramework(Request.Method.POST, "login", null, params, response -> {
@@ -121,7 +124,7 @@ public class GigyaProvider {
      * @param refresh true if this is a refresh call, false for initial call
      */
     void getGigyaJwt(final boolean refresh) {
-        if (this.configData != null && this.configData.isValid()) {
+        if (this.securityData != null && this.securityData.getGigyaApiKey() != null) {
             if (this.gigyaData.isJwtExpired()) {
                 Map<String, String> params = new HashMap<>();
                 params.put("oauth_token", this.gigyaData.getSessionCookie());
@@ -145,7 +148,7 @@ public class GigyaProvider {
      * Retrieve the person ID from the accounts framework. Later needed to query for available FINs.
      */
     void getGigyaPersonId() {
-        if (this.configData != null && this.configData.isValid()) {
+        if (this.securityData != null && this.securityData.getGigyaApiKey() != null) {
             Map<String, String> params = new HashMap<>();
             params.put("oauth_token", this.gigyaData.getSessionCookie());
             this.getDataFromGigyaFramework(Request.Method.POST, "getAccountInfo", null, params,
@@ -173,7 +176,7 @@ public class GigyaProvider {
                                            final Map<String, String> headers,
                                            final Map<String, String> params,
                                            final GigyaProvider.Listener<JSONObject> listener) {
-        final String url = this.configData.getGigyaTarget() + "/accounts." + urlSuffix;
+        final String url = this.securityData.getGigyaTarget() + "/accounts." + urlSuffix;
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(method, url, null, response -> {
             Log.i(TAG, "Response: " + response.toString());
             try {

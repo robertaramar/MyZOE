@@ -22,13 +22,9 @@ import de.aramar.zoe.data.kamereon.location.Location;
 import de.aramar.zoe.data.kamereon.persons.Persons;
 import de.aramar.zoe.data.kamereon.token.Token;
 import de.aramar.zoe.data.kamereon.vehicles.Vehicles;
-import de.aramar.zoe.data.security.ConfigData;
-import de.aramar.zoe.data.security.GigyaData;
 import de.aramar.zoe.data.security.KamereonData;
 import de.aramar.zoe.data.security.SecurityData;
 import de.aramar.zoe.data.security.SecurityDataObservable;
-import de.aramar.zoe.security.ConfigProvider;
-import de.aramar.zoe.security.GigyaProvider;
 import de.aramar.zoe.security.LoginController;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.SneakyThrows;
@@ -83,11 +79,6 @@ public class KamereonClient {
     private MutableLiveData<Location> mLocationResponse;
 
     /**
-     * The live data for Gigya
-     */
-    private LiveData<GigyaData> mGigyaData;
-
-    /**
      * Kamereon security data.
      */
     private KamereonData kamereonData;
@@ -95,12 +86,7 @@ public class KamereonClient {
     /**
      * Required for the API keys and the URLs.
      */
-    private ConfigData configData;
-
-    /**
-     * Required for the session token, person ID and JWT.
-     */
-    private GigyaData gigyaData;
+    //private ConfigData configData;
 
     /**
      * The list of vehicles.
@@ -153,17 +139,6 @@ public class KamereonClient {
                 .getObservable()
                 .subscribeOn(Schedulers.io())
                 .subscribe(newSecurityData -> this.securityData = newSecurityData);
-
-        ConfigProvider
-                .getConfigProvider(application)
-                .getConfigLiveData()
-                .observeForever(configData -> KamereonClient.this.configData = configData);
-
-        this.mGigyaData = GigyaProvider
-                .getGigya(application)
-                .getGigyaLiveData();
-
-        this.mGigyaData.observeForever(gigyaData -> KamereonClient.this.gigyaData = gigyaData);
     }
 
     /**
@@ -233,7 +208,8 @@ public class KamereonClient {
             headers.put("apikey", this.securityData.getWiredApiKey());
             headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
             String url = MessageFormat.format("{0}/commerce/v1/persons/{1}?country={2}",
-                    this.configData.getWiredTarget(), this.gigyaData.getPersonId(), this.configData
+                    this.securityData.getWiredTarget(), this.securityData.getGigyaPersonId(),
+                    this.securityData
                             .getLocale()
                             .getCountry());
 
@@ -270,8 +246,8 @@ public class KamereonClient {
                 headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
                 String url = MessageFormat.format(
                         "{0}/commerce/v1/accounts/{1}/kamereon/token?country={2}",
-                        this.configData.getWiredTarget(), this.securityData.getAccountId(),
-                        this.configData
+                        this.securityData.getWiredTarget(), this.securityData.getAccountId(),
+                        this.securityData
                                 .getLocale()
                                 .getCountry());
 
@@ -307,8 +283,8 @@ public class KamereonClient {
             headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
             headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String url = MessageFormat.format("{0}/commerce/v1/accounts/{1}/vehicles?country={2}",
-                    this.configData.getWiredTarget(), this.securityData.getAccountId(),
-                    this.configData
+                    this.securityData.getWiredTarget(), this.securityData.getAccountId(),
+                    this.securityData
                             .getLocale()
                             .getCountry());
 
@@ -343,8 +319,8 @@ public class KamereonClient {
                     this.defaultSharedPreferences.getBoolean("api_battery_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/battery-status?country={4}",
-                    this.configData.getWiredTarget(), this.securityData.getAccountId(), versionAPI,
-                    vin, this.configData
+                    this.securityData.getWiredTarget(), this.securityData.getAccountId(),
+                    versionAPI, vin, this.securityData
                             .getLocale()
                             .getCountry());
 
@@ -379,8 +355,8 @@ public class KamereonClient {
                     this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/cockpit?country={4}",
-                    this.configData.getWiredTarget(), this.securityData.getAccountId(), versionAPI,
-                    vin, this.configData
+                    this.securityData.getWiredTarget(), this.securityData.getAccountId(),
+                    versionAPI, vin, this.securityData
                             .getLocale()
                             .getCountry());
 
@@ -413,8 +389,8 @@ public class KamereonClient {
             headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String url = MessageFormat.format(
                     "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/location?country={3}",
-                    this.configData.getWiredTarget(), this.securityData.getAccountId(), vin,
-                    this.configData
+                    this.securityData.getWiredTarget(), this.securityData.getAccountId(), vin,
+                    this.securityData
                             .getLocale()
                             .getCountry());
 
@@ -443,14 +419,5 @@ public class KamereonClient {
         LoginController
                 .getLoginController(this.application)
                 .refreshGigyaJwt();
-    }
-
-    /**
-     * Helper to check for vaild login information.
-     *
-     * @return true if all infos are available
-     */
-    private boolean isLoginAvailable() {
-        return this.configData != null && this.configData.isValid() && this.securityData != null && this.gigyaData.isValid();
     }
 }

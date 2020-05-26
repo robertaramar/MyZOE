@@ -2,6 +2,8 @@ package de.aramar.zoe.data.security;
 
 import com.auth0.android.jwt.JWT;
 
+import java.util.Locale;
+
 import lombok.Data;
 
 @Data
@@ -33,6 +35,16 @@ public class SecurityData {
     private String accountId;
 
     /**
+     * The Gigya API URL.
+     */
+    private String gigyaTarget;
+
+    /**
+     * The Gigya person ID.
+     */
+    private String gigyaPersonId;
+
+    /**
      * ConfigData Gigya session token key.
      */
     private String gigyaSessionToken;
@@ -46,6 +58,16 @@ public class SecurityData {
      * Current Gigya JWT.
      */
     private String gigyaJwt;
+
+    /**
+     * The locale for the user.
+     */
+    private Locale locale;
+
+    /**
+     * The wired API URL.
+     */
+    private String wiredTarget;
 
     /**
      * Test for Gigya JWT expiration.
