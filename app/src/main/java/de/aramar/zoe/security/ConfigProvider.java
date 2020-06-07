@@ -5,14 +5,11 @@ import android.util.Log;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.JsonRequest;
-import com.android.volley.toolbox.RequestFuture;
 
 import org.json.JSONObject;
 
@@ -21,8 +18,8 @@ import java.util.Locale;
 
 import de.aramar.zoe.data.security.ConfigData;
 import de.aramar.zoe.network.BackendTraffic;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.SingleOnSubscribe;
 
 public class ConfigProvider {
     /**
@@ -51,10 +48,6 @@ public class ConfigProvider {
      */
     private RequestQueue queue;
 
-    private MutableLiveData<ConfigData> configLiveData;
-
-    private Observable<ConfigData> configDataObservable;
-
     /**
      * Private constructor to prevent instantiating more than THE singleton.
      */
@@ -62,7 +55,6 @@ public class ConfigProvider {
         this.queue = BackendTraffic
                 .getInstance(application.getApplicationContext())
                 .getRequestQueue();
-        this.configLiveData = new MutableLiveData<>();
     }
 
     /**
@@ -79,56 +71,43 @@ public class ConfigProvider {
     }
 
     /**
-     * Getter for the configLiveData
-     *
-     * @return configLiveData
-     */
-    public LiveData<ConfigData> getConfigLiveData() {
-        return this.configLiveData;
-    }
-
-    /**
      * Getter for the ConfigData single.
      * Triggers loading on first call.
      *
      * @return configDataSingle
      */
-    Observable<ConfigData> getConfigData(Locale locale) {
-        RequestFuture<JSONObject> future = RequestFuture.newFuture();
-        final String url = MessageFormat.format(TOKEN_PROD_SERVER + TOKEN_PATH, locale.toString());
-        // clear all data, we are starting fresh
-        JsonRequest<JSONObject> jsonObjectRequest =
-                new JsonObjectRequest(Request.Method.GET, url, null, future, future);
-        this.queue.add(jsonObjectRequest);
-        this.configDataObservable = Observable
-                .fromFuture(future)
-                .flatMap(jsonObject -> {
-                    ConfigData configData = new ConfigData();
-                    JSONObject wiredProd = jsonObject
-                            .getJSONObject("servers")
-                            .getJSONObject("wiredProd");
-                    configData.setWiredTarget(wiredProd.getString("target"));
-                    configData.setWiredApiKey(wiredProd.getString("apikey"));
-                    JSONObject gigyaProd = jsonObject
-                            .getJSONObject("servers")
-                            .getJSONObject("gigyaProd");
-                    configData.setGigyaTarget(gigyaProd.getString("target"));
-                    configData.setGigyaApiKey(gigyaProd.getString("apikey"));
-                    return Observable.just(configData);
+    Single<ConfigData> getConfigData(Locale locale) {
+        Single<ConfigData> configDataSingle =
+                Single.create((SingleOnSubscribe<ConfigData>) emitter -> {
+                    final String url =
+                            MessageFormat.format(TOKEN_PROD_SERVER + TOKEN_PATH, locale.toString());
+                    // clear all data, we are starting fresh
+                    JsonRequest<JSONObject> jsonObjectRequest =
+                            new JsonObjectRequest(Request.Method.GET, url, null, jsonObject -> {
+                                Log.d(TAG, "New config data response " + jsonObject);
+                                try {
+                                    ConfigData configData = new ConfigData();
+                                    JSONObject wiredProd = jsonObject
+                                            .getJSONObject("servers")
+                                            .getJSONObject("wiredProd");
+                                    configData.setWiredTarget(wiredProd.getString("target"));
+                                    configData.setWiredApiKey(wiredProd.getString("apikey"));
+                                    JSONObject gigyaProd = jsonObject
+                                            .getJSONObject("servers")
+                                            .getJSONObject("gigyaProd");
+                                    configData.setGigyaTarget(gigyaProd.getString("target"));
+                                    configData.setGigyaApiKey(gigyaProd.getString("apikey"));
+                                    emitter.onSuccess(configData);
+                                } catch (Exception exception) {
+                                    Log.d(TAG, "Transform config data error " + exception);
+                                    emitter.onError(exception);
+                                }
+                            }, error -> {
+                                Log.d(TAG, "New config data error " + error);
+                                emitter.onError(error);
+                            });
+                    this.queue.add(jsonObjectRequest);
                 });
-        this.configDataObservable
-                .subscribeOn(Schedulers.io())
-                .subscribe(configData -> {
-                    Log.d(TAG, "Received ConfigData response " + configData);
-                    configData.setLocale(locale);
-                    ConfigProvider.this.configLiveData.postValue(configData);
-                }, throwable -> {
-                    Log.e(TAG, "Invalid JSON response", throwable.getCause());
-                    ConfigData configData = new ConfigData();
-                    configData.setErrorText("Invalid JSON response " + throwable.getMessage());
-                    configData.setError(true);
-                    ConfigProvider.this.configLiveData.postValue(configData);
-                });
-        return this.configDataObservable;
+        return configDataSingle;
     }
 }

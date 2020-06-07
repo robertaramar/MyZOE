@@ -44,7 +44,7 @@ import lombok.SneakyThrows;
 
 
 public class HomeFragment extends Fragment implements AdapterView.OnItemSelectedListener, SwipeRefreshLayout.OnRefreshListener {
-    private static final String TAG = HomeViewModel.class.getCanonicalName();
+    private static final String TAG = HomeFragment.class.getCanonicalName();
 
     private HomeViewModel homeViewModel;
 
@@ -122,28 +122,29 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                                     .getLabel()
                                     .compareToIgnoreCase("ZOE") == 0)
                             .toArray());
-                    ArrayAdapter<Object> vehiclesArrayAdapter =
-                            new ArrayAdapter<>(HomeFragment.this.requireContext(),
-                                    android.R.layout.simple_spinner_dropdown_item, zoes);
-                    vehiclesArrayAdapter.setDropDownViewResource(
-                            android.R.layout.simple_spinner_dropdown_item);
-                    HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
-                    if (zoes.length > 1) {
-                        HomeFragment.this.finSpinner.setEnabled(true);
-                        HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
-                    } else {
-                        if (this.defaultSharedPreferences.getBoolean("ui_show_vin_spinner",
-                                false)) {
+                    if (zoes.length > 0) {
+                        ArrayAdapter<Object> vehiclesArrayAdapter =
+                                new ArrayAdapter<>(HomeFragment.this.requireContext(),
+                                        android.R.layout.simple_spinner_dropdown_item, zoes);
+                        vehiclesArrayAdapter.setDropDownViewResource(
+                                android.R.layout.simple_spinner_dropdown_item);
+                        HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
+                        if (zoes.length > 1) {
+                            HomeFragment.this.finSpinner.setEnabled(true);
                             HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
-                            HomeFragment.this.finSpinner.setEnabled(false);
                         } else {
-                            // Disable if there is only one entry
-                            HomeFragment.this.finSpinner.setVisibility(View.GONE);
-                            this.changeCar((VehicleLink) zoes[0]);
+                            if (this.defaultSharedPreferences.getBoolean("ui_show_vin_spinner",
+                                    false)) {
+                                HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
+                                HomeFragment.this.finSpinner.setEnabled(false);
+                            } else {
+                                // Disable if there is only one entry
+                                HomeFragment.this.finSpinner.setVisibility(View.GONE);
+                                this.changeCar((VehicleLink) zoes[0]);
+                            }
                         }
                     }
                 });
-
         this.swipeRefreshLayout.setRefreshing(true);
     }
 

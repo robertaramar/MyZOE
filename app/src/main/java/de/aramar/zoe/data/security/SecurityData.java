@@ -125,4 +125,8 @@ public class SecurityData {
         this.gigyaJwt = null;
         this.kamereonJwt = null;
     }
+
+    public boolean isConfigured() {
+        return this.locale != null && this.wiredApiKey != null && this.wiredTarget != null && this.gigyaApiKey != null && this.gigyaTarget != null;
+    }
 }

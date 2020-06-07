@@ -2,6 +2,7 @@ package de.aramar.zoe.ui.location;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -45,6 +46,8 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
 
     private BitmapDescriptor vehicleMarkerBitmapDescriptor;
 
+    private String vin;
+
     private Location location;
 
     @Override
@@ -60,11 +63,12 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         this.homeViewModel
                 .getVehicles()
                 .observe(this.getViewLifecycleOwner(), vehicles -> {
-                    LocationFragment.this.homeViewModel.updateLocation(vehicles
+                    this.vin = vehicles
                             .getVehicleLinks()
                             .get(0)
-                            .getVin());
-                    LocationFragment.this.loadMarkerImage(vehicles
+                            .getVin();
+                    this.homeViewModel.updateLocation(this.vin);
+                    this.loadMarkerImage(vehicles
                             .getVehicleLinks()
                             .get(0)
                             .getVehicleDetails());
@@ -72,9 +76,9 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         this.homeViewModel
                 .getLocation()
                 .observe(this.getViewLifecycleOwner(), location -> {
-                    LocationFragment.this.location = location;
-                    if (LocationFragment.this.mMap != null) {
-                        LocationFragment.this.setMarker(location);
+                    this.location = location;
+                    if (this.mMap != null) {
+                        this.setMarker(location);
                     }
                 });
     }
@@ -90,6 +94,22 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         assert mapFragment != null;
         mapFragment.getMapAsync(this);
         return root;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_refresh) {
+            this.triggerUpdate();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void triggerUpdate() {
+        if (this.vin != null) {
+            this.homeViewModel.updateLocation(this.vin);
+        }
     }
 
     /**

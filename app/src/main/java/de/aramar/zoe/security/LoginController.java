@@ -3,25 +3,20 @@ package de.aramar.zoe.security;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
-
-import com.auth0.android.jwt.JWT;
 
 import java.util.Locale;
 
 import de.aramar.zoe.data.kamereon.persons.Account;
-import de.aramar.zoe.data.security.ConfigData;
-import de.aramar.zoe.data.security.GigyaData;
-import de.aramar.zoe.data.security.KamereonData;
 import de.aramar.zoe.data.security.SecurityData;
 import de.aramar.zoe.data.security.SecurityDataObservable;
 import de.aramar.zoe.data.security.SecurityStatus;
-import de.aramar.zoe.network.KamereonClient;
+import de.aramar.zoe.network.KamereonRx;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 /**
  * Login controller that handles the whole process of logging in a user into the Gigya and Kamereon
@@ -96,19 +91,14 @@ public class LoginController extends AndroidViewModel {
 
     private ConfigProvider configProvider;
 
-    private GigyaProvider gigyaProvider;
-
-    private KamereonClient kamereonClient;
-
     /**
      * The application wide security container. Only one instance allowed.
      */
     private SecurityData securityData = new SecurityData();
 
-    /**
-     * The live data to be shown/used in the fragments view.
-     */
-    private MutableLiveData<SecurityData> liveSecurityDataContainer;
+    private final GigyaRx gigyaRx;
+
+    private final KamereonRx kamereonRx;
 
     private LoginController(@NonNull Application application) {
         super(application);
@@ -117,155 +107,9 @@ public class LoginController extends AndroidViewModel {
                 .getApplication()
                 .getApplicationContext());
 
-        this.liveSecurityDataContainer = new MutableLiveData<>();
-        this.liveSecurityDataContainer.setValue(this.securityData);
-
         this.configProvider = ConfigProvider.getConfigProvider(application);
-        LiveData<ConfigData> liveConfigData = this.configProvider.getConfigLiveData();
-
-        this.gigyaProvider = GigyaProvider.getGigya(application);
-        LiveData<GigyaData> liveGigyaData = this.gigyaProvider.getGigyaLiveData();
-
-        this.kamereonClient = KamereonClient.getKamereonClient(application);
-        LiveData<KamereonData> liveKamereonData = this.kamereonClient.getKamereonDataLiveData();
-
-        liveConfigData.observeForever(configData -> {
-            if (configData.isError()) {
-                this.securityData.setText(this
-                        .getApplication()
-                        .getResources()
-                        .getString(
-                                SecurityStatus.API_TOKENS_AVAILABLE.getErrorStatusTextId()) + "\n" + configData.getErrorText());
-                this.securityData.setStatus(SecurityStatus.ERROR);
-            } else if (configData.isValid()) {
-                this.securityData.setText(this
-                        .getApplication()
-                        .getResources()
-                        .getString(SecurityStatus.API_TOKENS_AVAILABLE.getOkStatusTextId()));
-                this.securityData.setLocale(configData.getLocale());
-                this.securityData.setWiredTarget(configData.getWiredTarget());
-                this.securityData.setWiredApiKey(configData.getWiredApiKey());
-                this.securityData.setGigyaApiKey(configData.getGigyaApiKey());
-                this.securityData.setGigyaTarget(configData.getGigyaTarget());
-                this.securityData.setStatus(SecurityStatus.API_TOKENS_AVAILABLE);
-                SecurityDataObservable.publish(this.securityData);
-                this.startLoginUser();
-            } else {
-                this.securityData.setText(this
-                        .getApplication()
-                        .getResources()
-                        .getString(SecurityStatus.EMPTY.getOkStatusTextId()));
-                this.securityData.setStatus(SecurityStatus.EMPTY);
-            }
-            SecurityDataObservable.publish(this.securityData);
-            this.liveSecurityDataContainer.postValue(this.securityData);
-        });
-
-        liveGigyaData.observeForever(gigyaData -> {
-            if (gigyaData.isError()) {
-                this.securityData.appendText(this
-                        .getApplication()
-                        .getResources()
-                        .getString(
-                                SecurityStatus.GIGYA_SESSION_AVAILABLE.getErrorStatusTextId()) + "\n" + gigyaData.getErrorText());
-                this.securityData.setStatus(SecurityStatus.ERROR);
-            } else {
-                switch (gigyaData.getStatus()) {
-                    case SESSION_COOKIE_AVAILABLE:
-                        this.securityData.appendText(this
-                                .getApplication()
-                                .getResources()
-                                .getString(
-                                        SecurityStatus.GIGYA_SESSION_AVAILABLE.getOkStatusTextId()));
-                        this.securityData.setGigyaSessionToken(gigyaData.getSessionCookie());
-                        this.securityData.setStatus(SecurityStatus.GIGYA_SESSION_AVAILABLE);
-                        this.gigyaProvider.getGigyaJwt(false);
-                        SecurityDataObservable.publish(this.securityData);
-                        break;
-                    case JWT_AVAILABLE:
-                    case JWT_REFRESHED:
-                        this.securityData.setGigyaJwt(gigyaData.getJwt());
-                        this.securityData.appendText(this
-                                .getApplication()
-                                .getResources()
-                                .getString(SecurityStatus.GIGYA_JWT_AVAILABLE.getOkStatusTextId()));
-                        this.securityData.setStatus(SecurityStatus.GIGYA_JWT_AVAILABLE);
-                        // Only continue with login sequence on initial call
-                        if (gigyaData.getStatus() == GigyaData.GigyaStatus.JWT_AVAILABLE) {
-                            this.gigyaProvider.getGigyaPersonId();
-                        } else {
-                            // if this is a Gigya JWT refresh, go and refresh the Kamereon JWT as well
-                            this.kamereonClient.getKamereonToken(true);
-                        }
-                        break;
-                    case PERSON_AVAILABLE:
-                        this.securityData.appendText(this
-                                .getApplication()
-                                .getResources()
-                                .getString(
-                                        SecurityStatus.GIGYA_PERSON_AVAILABLE.getOkStatusTextId()));
-                        this.securityData.setStatus(SecurityStatus.GIGYA_PERSON_AVAILABLE);
-                        this.securityData.setGigyaPersonId(gigyaData.getPersonId());
-                        SecurityDataObservable.publish(this.securityData);
-                        this.kamereonClient.getKamereonPersons();
-                        break;
-                }
-            }
-            SecurityDataObservable.publish(this.securityData);
-            this.liveSecurityDataContainer.postValue(this.securityData);
-        });
-
-        liveKamereonData.observeForever(kamereonData -> {
-            if (kamereonData.isError()) {
-                this.securityData.appendText(this
-                        .getApplication()
-                        .getResources()
-                        .getString(
-                                SecurityStatus.KAMEREON_JWT_AVAILABLE.getErrorStatusTextId()) + "\n" + kamereonData.getErrorText());
-                this.securityData.setStatus(SecurityStatus.ERROR);
-            } else
-                switch (kamereonData.getStatus()) {
-                    case PERSON_AVAILABLE:
-                        this.securityData.appendText(this
-                                .getApplication()
-                                .getResources()
-                                .getString(
-                                        SecurityStatus.KAMEREON_PERSON_AVAILABLE.getOkStatusTextId()));
-                        this.securityData.setStatus(SecurityStatus.KAMEREON_PERSON_AVAILABLE);
-                        String accountId = kamereonData
-                                .getPersons()
-                                .getAccounts()
-                                .stream()
-                                .filter(account -> account
-                                        .getAccountType()
-                                        .compareToIgnoreCase("MYRENAULT") == 0)
-                                .findFirst()
-                                // .orElseThrow(IllegalArgumentException::new)
-                                .orElse(new Account()) // hm, need to see if that goes away when all is Observable
-                                .getAccountId();
-                        this.securityData.setAccountId(accountId);
-                        this.kamereonClient.getKamereonToken(false);
-                        break;
-                    case JWT_AVAILABLE:
-                    case JWT_REFRESHED:
-                        this.securityData.setKamereonJwt(kamereonData
-                                .getToken()
-                                .getAccessToken());
-                        this.securityData.appendText(this
-                                .getApplication()
-                                .getResources()
-                                .getString(
-                                        SecurityStatus.KAMEREON_JWT_AVAILABLE.getOkStatusTextId()));
-                        this.securityData.setStatus(SecurityStatus.KAMEREON_JWT_AVAILABLE);
-                        // Only continue login sequence on initial call
-                        if (kamereonData.getStatus() == KamereonData.KamereonStatus.JWT_AVAILABLE) {
-                            this.kamereonClient.getVehicles();
-                        }
-                        break;
-                }
-            this.liveSecurityDataContainer.postValue(this.securityData);
-            SecurityDataObservable.publish(this.securityData);
-        });
+        this.kamereonRx = KamereonRx.getKamereonRx(application);
+        this.gigyaRx = GigyaRx.getGigyaRx(application);
     }
 
     /**
@@ -282,15 +126,6 @@ public class LoginController extends AndroidViewModel {
     }
 
     /**
-     * Getter for the main data object, handled in this class.
-     *
-     * @return the mutable {@link LiveData} with its {@link SecurityData}
-     */
-    public LiveData<SecurityData> getLiveSecurityDataContainer() {
-        return this.liveSecurityDataContainer;
-    }
-
-    /**
      * Method to retrieve API tokens and URLs from the Renault system.
      *
      * @param locale country code like de_DE, en_GB, fr_FR
@@ -298,52 +133,42 @@ public class LoginController extends AndroidViewModel {
     public void loadConfig(Locale locale) {
         // clear all data, we are starting fresh
         this.securityData.clear();
-        this.configProvider.getConfigData(locale);
+        this.configProvider
+                .getConfigData(locale)
+                .subscribeOn(Schedulers.io())
+                .subscribe(configData -> {
+                    if (configData.isValid()) {
+                        this.securityData.setText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.API_TOKENS_AVAILABLE.getOkStatusTextId()));
+                        this.securityData.setLocale(locale);
+                        this.securityData.setWiredTarget(configData.getWiredTarget());
+                        this.securityData.setWiredApiKey(configData.getWiredApiKey());
+                        this.securityData.setGigyaApiKey(configData.getGigyaApiKey());
+                        this.securityData.setGigyaTarget(configData.getGigyaTarget());
+                        this.securityData.setStatus(SecurityStatus.API_TOKENS_AVAILABLE);
+                        SecurityDataObservable.publish(this.securityData);
+                        this.startLoginUser();
+                    } else {
+                        this.securityData.setText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(SecurityStatus.EMPTY.getOkStatusTextId()));
+                        this.securityData.setStatus(SecurityStatus.EMPTY);
+                    }
+                    SecurityDataObservable.publish(this.securityData);
+                }, throwable -> {
+                    Log.e(TAG, "Invalid JSON response", throwable.getCause());
+                    this.securityData.setText(this
+                            .getApplication()
+                            .getResources()
+                            .getString(
+                                    SecurityStatus.API_TOKENS_AVAILABLE.getErrorStatusTextId()) + "\n" + throwable.getMessage());
+                    this.securityData.setStatus(SecurityStatus.ERROR);
+                });
     }
-
-    /**
-     * Retrieve the session cookie from the accounts framework by logging in the user with username
-     * and password and also providing the Gigya-API-key.
-     *
-     * @param username name registered to Renault
-     * @param password password for user
-     */
-    private void loadGigya(final String username, final String password) {
-        this.gigyaProvider.getGigyaSession(username, password);
-    }
-
-    /**
-     * Refresh the Gigya JWT.
-     */
-    public void refreshGigyaJwt() {
-        this.gigyaProvider.getGigyaJwt(true);
-    }
-
-    /**
-     * @return true if this instance is not authenticated.
-     */
-    public boolean isUnauthenticated() {
-        return this.securityData.getStatus() == SecurityStatus.EMPTY || this.isGigyaJwtExpired() || this.isKamereonJwtExpired();
-    }
-
-    private boolean isGigyaJwtExpired() {
-        if (this.securityData.getGigyaJwt() != null) {
-            JWT gigyaJwt = new JWT(this.securityData.getGigyaJwt());
-            return gigyaJwt.isExpired(10);
-        } else {
-            return true;
-        }
-    }
-
-    private boolean isKamereonJwtExpired() {
-        if (this.securityData.getKamereonJwt() != null) {
-            JWT gigyaJwt = new JWT(this.securityData.getKamereonJwt());
-            return gigyaJwt.isExpired(10);
-        } else {
-            return true;
-        }
-    }
-
 
     /**
      * @return boolean whether to store the login credentials.
@@ -441,14 +266,92 @@ public class LoginController extends AndroidViewModel {
         if (this.securityData.getStatus() == SecurityStatus.EMPTY) {
             return this.startLoginConfig();
         }
+
         // Prefill username and password
         String username = this.getLoginUsername();
         String password = this.getLoginPassword();
         if (username != null && password != null) {
-            this.loadGigya(username, password);
+            //            this.loadGigya(username, password);
+            this.gigyaRx
+                    .getGigyaSession(username, password)
+                    .subscribeOn(Schedulers.io())
+                    .flatMap(sessionToken -> {
+                        this.securityData.setGigyaSessionToken(sessionToken);
+                        this.securityData.appendText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.GIGYA_SESSION_AVAILABLE.getOkStatusTextId()));
+                        SecurityDataObservable.publish(this.securityData);
+                        return this.gigyaRx.getGigyaJwt();
+                    })
+                    .flatMap(gigyaJwt -> {
+                        this.securityData.setGigyaJwt(gigyaJwt);
+                        this.securityData.appendText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(SecurityStatus.GIGYA_JWT_AVAILABLE.getOkStatusTextId()));
+                        SecurityDataObservable.publish(this.securityData);
+                        return this.gigyaRx.getGigyaPersonId();
+                    })
+                    .flatMap(personId -> {
+                        this.securityData.setGigyaPersonId(personId);
+                        this.securityData.appendText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.GIGYA_PERSON_AVAILABLE.getOkStatusTextId()));
+                        SecurityDataObservable.publish(this.securityData);
+                        return this.kamereonRx.getKamereonPersons();
+                    })
+                    .flatMap(persons -> {
+                        String accountId = persons
+                                .getAccounts()
+                                .stream()
+                                .filter(account -> account
+                                        .getAccountType()
+                                        .compareToIgnoreCase("MYRENAULT") == 0)
+                                .findFirst()
+                                // .orElseThrow(IllegalArgumentException::new)
+                                .orElse(new Account()) // hm, need to see if that goes away when all is Observable
+                                .getAccountId();
+                        this.securityData.setAccountId(accountId);
+                        this.securityData.appendText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.KAMEREON_PERSON_AVAILABLE.getOkStatusTextId()));
+                        SecurityDataObservable.publish(this.securityData);
+                        return this.kamereonRx.getKamereonJWT();
+                    })
+                    .subscribe(kamereonJwt -> {
+                        this.securityData.setKamereonJwt(kamereonJwt);
+                        this.securityData.appendText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.KAMEREON_JWT_AVAILABLE.getOkStatusTextId()));
+                        SecurityDataObservable.publish(this.securityData);
+                        this.kamereonRx.getVehicles();
+                    }, throwable -> {
+                        Log.e(TAG, "startLogin error ", throwable);
+                        this.securityData.appendText(this
+                                .getApplication()
+                                .getResources()
+                                .getString(
+                                        SecurityStatus.ERROR.getErrorStatusTextId()) + "\n" + throwable.getMessage());
+                        SecurityDataObservable.publish(this.securityData);
+                    });
             return true;
         } else {
             return false;
         }
+    }
+
+    /**
+     * Issue a JWT refresh.
+     */
+    public void refresh() {
+        this.kamereonRx.getKamereonJWT();
     }
 }

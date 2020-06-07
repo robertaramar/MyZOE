@@ -56,6 +56,6 @@ public class ConfigData {
      * @return true if valid
      */
     public boolean isValid() {
-        return this.locale != null && this.wiredApiKey != null && this.wiredTarget != null && this.gigyaApiKey != null && this.gigyaTarget != null;
+        return this.wiredApiKey != null && this.wiredTarget != null && this.gigyaApiKey != null && this.gigyaTarget != null;
     }
 }

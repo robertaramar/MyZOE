@@ -11,7 +11,9 @@ import androidx.lifecycle.MutableLiveData;
 import java.util.Locale;
 
 import de.aramar.zoe.data.security.SecurityData;
+import de.aramar.zoe.data.security.SecurityDataObservable;
 import de.aramar.zoe.security.LoginController;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 /**
  * Login view model class that handles reacting to the Gigya/Kamereon login process.
@@ -21,11 +23,6 @@ public class LoginViewModel extends AndroidViewModel {
      * Tag for logging data.
      */
     private static final String TAG = LoginViewModel.class.getCanonicalName();
-
-    /**
-     * The application wide security container. Only one instance allowed.
-     */
-    private static SecurityData securityData = new SecurityData();
 
     /**
      * The overall login controller for Gigya and Kamereon.
@@ -39,17 +36,19 @@ public class LoginViewModel extends AndroidViewModel {
 
     public LoginViewModel(@NonNull Application application) {
         super(application);
+
+        SecurityDataObservable
+                .getObservable()
+                .subscribeOn(Schedulers.io())
+                .subscribe(newSecurityData -> {
+                    Log.d(TAG, "Security data change to " + newSecurityData
+                            .getStatus()
+                            .toString());
+                    LoginViewModel.this.liveSecurityDataContainer.postValue(newSecurityData);
+                });
         this.liveSecurityDataContainer = new MutableLiveData<>();
 
         this.loginController = LoginController.getLoginController(application);
-        this.loginController
-                .getLiveSecurityDataContainer()
-                .observeForever(securityData -> {
-                    Log.d(TAG, "Security data change to " + securityData
-                            .getStatus()
-                            .toString());
-                    LoginViewModel.this.liveSecurityDataContainer.postValue(securityData);
-                });
     }
 
     /**
@@ -67,8 +66,6 @@ public class LoginViewModel extends AndroidViewModel {
      * @param locale country code like de_DE, en_GB, fr_FR
      */
     void loadConfig(Locale locale) {
-        // clear all data, we are starting fresh
-        securityData.clear();
         this.loginController.loadConfig(locale);
     }
 
@@ -76,6 +73,6 @@ public class LoginViewModel extends AndroidViewModel {
      * Refresh both JWTs.
      */
     void refreshJwt() {
-        this.loginController.refreshGigyaJwt();
+        this.loginController.refresh();
     }
 }
