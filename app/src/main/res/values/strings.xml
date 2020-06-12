@@ -62,4 +62,16 @@
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
     <string name="label_void">void</string>
     <string name="battery_timestamp_label">Timestamp</string>
+    <string name="plug_state_unplugged">Unplugged</string>
+    <string name="plug_state_plugged">Plugged</string>
+    <string name="plug_state_error">Plug error</string>
+    <string name="plug_state_not_available">Not available</string>
+    <string name="charge_state_not_in_charge">Not in charge</string>
+    <string name="charge_state_waiting_planned">Waiting for planned charge</string>
+    <string name="charge_state_charge_ended">Charge ended</string>
+    <string name="charge_state_flap_open">Energy flap opened</string>
+    <string name="charge_state_in_progress">Charge in progress</string>
+    <string name="charge_state_waiting_current">Waiting for current charge</string>
+    <string name="charge_state_error">Charge error</string>
+    <string name="charge_state_not_available">Not available</string>
 </resources>

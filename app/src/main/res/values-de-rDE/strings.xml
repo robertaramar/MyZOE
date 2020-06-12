@@ -60,4 +60,16 @@
     <string name="toast_copied_to_clipboard">In Zwischenablage kopiert</string>
     <string name="label_void">ungültig</string>
     <string name="battery_timestamp_label">Zeitstempel</string>
+    <string name="plug_state_unplugged">Ausgesteckt</string>
+    <string name="plug_state_plugged">Eingesteckt</string>
+    <string name="plug_state_error">Fehler</string>
+    <string name="plug_state_not_available">Nicht verfügbar</string>
+    <string name="charge_state_not_in_charge">Lädt nicht</string>
+    <string name="charge_state_waiting_planned">Warte auf geplantes Laden</string>
+    <string name="charge_state_charge_ended">Laden beendet</string>
+    <string name="charge_state_flap_open">Ladeklappe geöffnet</string>
+    <string name="charge_state_in_progress">Lädt</string>
+    <string name="charge_state_waiting_current">Warte auf aktuelles Laden</string>
+    <string name="charge_state_error">Ladefehler</string>
+    <string name="charge_state_not_available">Nicht verfügbar</string>
 </resources>

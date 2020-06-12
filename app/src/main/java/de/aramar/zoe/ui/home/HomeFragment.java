@@ -31,11 +31,14 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import de.aramar.zoe.R;
 import de.aramar.zoe.data.Summary;
 import de.aramar.zoe.data.kamereon.battery.Attributes;
+import de.aramar.zoe.data.kamereon.battery.ChargeStateEnum;
+import de.aramar.zoe.data.kamereon.battery.PlugStateEnum;
 import de.aramar.zoe.data.kamereon.vehicles.Asset;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleLink;
 import de.aramar.zoe.network.BackendTraffic;
@@ -59,6 +62,8 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private Switch batteryPlugSwitch;
 
     private Switch batteryChargeSwitch;
+
+    private TextView batteryChargeSwitchText;
 
     private ImageView vehicleImage;
 
@@ -88,6 +93,8 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private SharedPreferences defaultSharedPreferences;
 
     private View batteryTimestampRow;
+
+    private TextView batteryPlugSwitchText;
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -158,8 +165,10 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         this.batteryValueTextView = root.findViewById(R.id.battery_level_value);
         this.batteryPlugSwitch = root.findViewById(R.id.battery_plug_switch);
         this.batteryPlugSwitch.setClickable(false);
+        this.batteryPlugSwitchText = root.findViewById(R.id.battery_plug_switch_text);
         this.batteryChargeSwitch = root.findViewById(R.id.battery_charge_switch);
         this.batteryChargeSwitch.setClickable(false);
+        this.batteryChargeSwitchText = root.findViewById(R.id.battery_charge_switch_text);
         this.vehicleImage = root.findViewById(R.id.vehicleImage);
         this.batteryProgressBar = root.findViewById(R.id.battery_progress_bar);
         this.batteryTemperatureTextView = root.findViewById(R.id.battery_temperature_value);
@@ -301,23 +310,10 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
             this.batteryProgressBar.setProgress(
                     attributes.getBatteryLevel() != null ? attributes.getBatteryLevel() : 0);
 
-            this.batteryPlugSwitch.setChecked(attributes.getPlugStatus() != 0);
+            this.setPlugState(attributes.getPlugStatus());
 
-            if (attributes.getChargingStatus() != null) {
-                // V2 API
-                this.batteryChargeSwitch.setChecked(attributes.getChargingStatus() >= 1.0);
-            } else {
-                // V1 API
-                Object chargeStatus = null;
-                if (attributes
-                        .getAdditionalProperties()
-                        .containsKey("chargeStatus")) {
-                    chargeStatus = attributes
-                            .getAdditionalProperties()
-                            .get("chargeStatus");
-                }
-                this.batteryChargeSwitch.setChecked(chargeStatus != null && (int) chargeStatus > 0);
-            }
+            this.setChargeState(attributes.getChargingStatus(),
+                    attributes.getAdditionalProperties());
 
             String batteryTemperature =
                     (attributes.getBatteryTemperature() != null) ? this.toTemperatureString(
@@ -355,6 +351,28 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                     .getAttributes()
                     .getTotalMileage()));
         }
+    }
+
+    private void setChargeState(Double chargingStatus, Map<String, Object> additionalProperties) {
+        if (chargingStatus != null) {
+            // V2 API
+            ChargeStateEnum chargeStateEnum = ChargeStateEnum.getEnumFromValue(chargingStatus);
+            this.batteryChargeSwitch.setChecked(chargeStateEnum.isCharging());
+            this.batteryChargeSwitchText.setText(chargeStateEnum.getStateDescription());
+        } else {
+            // V1 API
+            Object chargeStatus = null;
+            if (additionalProperties.containsKey("chargeStatus")) {
+                chargeStatus = additionalProperties.get("chargeStatus");
+            }
+            this.batteryChargeSwitch.setChecked(chargeStatus != null && (int) chargeStatus > 0);
+        }
+    }
+
+    private void setPlugState(Integer plugStatus) {
+        PlugStateEnum plugStateEnum = PlugStateEnum.getEnumFromValue(plugStatus);
+        this.batteryPlugSwitch.setChecked(plugStateEnum.isPlugged());
+        this.batteryPlugSwitchText.setText(plugStateEnum.getStateDescription());
     }
 
     /**

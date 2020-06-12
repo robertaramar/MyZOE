@@ -1,5 +1,11 @@
 # Changelog
 
+#### v0.2.0
+
+ * Reworked all network connectivity to RxJava observables
+ * Implemented refresh for geo position
+ * Added status text to plug and charge state
+
 #### v0.1.6
 
  * Add data timestamp to status screen (+ layout adjustments)
