@@ -2,9 +2,10 @@
 
 #### v0.2.0
 
- * Reworked all network connectivity to RxJava observables
- * Implemented refresh for geo position
+ * Implemented HVAC start and cancel command
  * Added status text to plug and charge state
+ * Implemented refresh for geo position
+ * Reworked all network connectivity to RxJava observables
 
 #### v0.1.6
 

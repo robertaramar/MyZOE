@@ -30,6 +30,9 @@ public class JacksonRequest<T> extends JsonRequest<T> {
      *
      * @param method        the HTTP method to use
      * @param url           URL to fetch the JSON from
+     * @param headers       HTTP headers
+     * @param params        parameters
+     * @param responseType  expected class for response
      * @param listener      Listener to receive the JSON response
      * @param errorListener Error listener, or null to ignore errors.
      */
@@ -37,6 +40,28 @@ public class JacksonRequest<T> extends JsonRequest<T> {
                           final Map<String, String> params, Class<T> responseType,
                           Response.Listener<T> listener, Response.ErrorListener errorListener) {
         super(method, url, null, listener, errorListener);
+        this.params = params;
+        this.headers = headers;
+        this.responseType = responseType;
+    }
+
+    /**
+     * Creates a new request.
+     *
+     * @param method        the HTTP method to use
+     * @param url           URL to fetch the JSON from
+     * @param jsonBody      body for POST requests
+     * @param headers       HTTP headers
+     * @param params        parameters
+     * @param responseType  expected class for response
+     * @param listener      Listener to receive the JSON response
+     * @param errorListener Error listener, or null to ignore errors.
+     */
+    public JacksonRequest(int method, String url, Object jsonBody,
+                          final Map<String, String> headers, final Map<String, String> params,
+                          Class<T> responseType, Response.Listener<T> listener,
+                          Response.ErrorListener errorListener) {
+        super(method, url, Mapper.string(jsonBody), listener, errorListener);
         this.params = params;
         this.headers = headers;
         this.responseType = responseType;
@@ -62,12 +87,15 @@ public class JacksonRequest<T> extends JsonRequest<T> {
         if (this.params != null && this.params.size() > 0) {
             return this.encodeParameters(this.params, this.getParamsEncoding());
         }
-        return null;
+        return super.getBody();
     }
 
     @Override
     public String getBodyContentType() {
-        return "application/x-www-form-urlencoded; charset=UTF-8";
+        if (this.params != null && this.params.size() > 0) {
+            return "application/x-www-form-urlencoded; charset=UTF-8";
+        }
+        return super.getBodyContentType();
     }
 
     @Override

@@ -74,4 +74,9 @@
     <string name="charge_state_waiting_current">Waiting for current charge</string>
     <string name="charge_state_error">Charge error</string>
     <string name="charge_state_not_available">Not available</string>
+    <string name="button_charge">Charge</string>
+    <string name="button_aircondition_on">Start</string>
+    <string name="button_aircondition_off">Stop</string>
+    <string name="toast_aircondition_good">Aircondition command successfully transmitted...</string>
+    <string name="toast_aircondition_error">Aircondition command terminated with failure...</string>
 </resources>

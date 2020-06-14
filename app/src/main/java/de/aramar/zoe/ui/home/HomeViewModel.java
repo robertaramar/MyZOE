@@ -9,6 +9,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import de.aramar.zoe.data.Summary;
+import de.aramar.zoe.data.kamereon.hvac.HvacCommandEnum;
 import de.aramar.zoe.data.kamereon.location.Location;
 import de.aramar.zoe.data.kamereon.vehicles.Vehicles;
 import de.aramar.zoe.network.KamereonRx;
@@ -86,6 +87,31 @@ public class HomeViewModel extends AndroidViewModel {
                 }, error -> {
                     Log.d(TAG, "An error cockpit status " + error);
                     this.mSummary.postValue(this.summary); // TODO introduce error values
+                });
+    }
+
+    void sendHvacCommand(String vin, HvacCommandEnum hvacCommandEnum) {
+        this.kamereonRx
+                .postHVAC(vin, hvacCommandEnum)
+                .subscribeOn(Schedulers.io())
+                .subscribe(hvacPackage -> {
+                    this.summary.setHvacCommand(hvacCommandEnum);
+                    if (hvacPackage
+                            .getData()
+                            .getId() != null) {
+                        this.summary.setHvacStatus(hvacPackage
+                                .getData()
+                                .getAttributes()
+                                .getAction()
+                                .equalsIgnoreCase(HvacCommandEnum.START.getCommand()));
+                    } else {
+                        this.summary.setHvacStatus(null);
+                    }
+                    this.mSummary.postValue(this.summary);
+                }, throwable -> {
+                    this.summary.setHvacCommand(hvacCommandEnum);
+                    this.summary.setHvacStatus(null);
+                    this.mSummary.postValue(this.summary);
                 });
     }
 

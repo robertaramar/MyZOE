@@ -230,7 +230,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_margin="@dimen/home_text_margin"
-                            android:layout_weight="2"
+                            android:layout_weight="20"
                             android:text="@string/unknown_value" />
                     </LinearLayout>
 
@@ -271,7 +271,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_margin="@dimen/home_text_margin"
-                            android:layout_weight="2"
+                            android:layout_weight="20"
                             android:text="@string/unknown_value" />
                     </LinearLayout>
 
@@ -402,6 +402,32 @@
                         android:text="@string/unknown_value" />
                 </TableRow>
 
+                <TableRow
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent">
+
+                    <Button
+                        android:id="@+id/button_air_condition_on"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="1"
+                        android:layout_margin="@dimen/home_text_margin"
+                        android:drawableStart="@drawable/ic_aircondition"
+                        android:layout_weight="1"
+                        android:text="@string/button_aircondition_on" />
+                    />
+
+                    <Button
+                        android:id="@+id/button_air_condition_off"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_column="2"
+                        android:layout_margin="@dimen/home_text_margin"
+                        android:layout_weight="1"
+                        android:drawableStart="@drawable/ic_aircondition"
+                        android:text="@string/button_aircondition_off" />
+                    />
+                </TableRow>
             </TableLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

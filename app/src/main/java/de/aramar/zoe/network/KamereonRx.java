@@ -16,6 +16,10 @@ import java.util.Map;
 
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
 import de.aramar.zoe.data.kamereon.cockpit.Cockpit;
+import de.aramar.zoe.data.kamereon.hvac.Attributes;
+import de.aramar.zoe.data.kamereon.hvac.Data;
+import de.aramar.zoe.data.kamereon.hvac.HvacCommandEnum;
+import de.aramar.zoe.data.kamereon.hvac.HvacPackage;
 import de.aramar.zoe.data.kamereon.location.Location;
 import de.aramar.zoe.data.kamereon.persons.Persons;
 import de.aramar.zoe.data.kamereon.token.Token;
@@ -304,5 +308,50 @@ public class KamereonRx {
                 });
 
         return locationSingleSubject;
+    }
+
+    /**
+     * Post a command to start/stop the air-condition (pre-heating).
+     */
+    public Single<HvacPackage> postHVAC(String vin, HvacCommandEnum hvacCommandEnum) {
+        SingleSubject<HvacPackage> hvacResponseSingleSubject = SingleSubject.create();
+
+        this
+                .getKamereonJWT()
+                .subscribeOn(Schedulers.io())
+                .subscribe(kamereonJwt -> {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-type", "application/vnd.api+json");
+                    headers.put("apikey", this.securityData.getWiredApiKey());
+                    headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                    headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
+                    String url = MessageFormat.format(
+                            "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/actions/hvac-start?country={3}",
+                            this.securityData.getWiredTarget(), this.securityData.getAccountId(),
+                            vin, this.securityData
+                                    .getLocale()
+                                    .getCountry());
+                    HvacPackage hvacCommand = new HvacPackage();
+                    Data data = new Data();
+                    data.setType("HvacStart");
+                    Attributes attributes = new Attributes();
+                    attributes.setAction(hvacCommandEnum.getCommand());
+                    attributes.setTargetTemperature(21);
+                    data.setAttributes(attributes);
+                    hvacCommand.setData(data);
+                    JacksonRequest<HvacPackage> request =
+                            new JacksonRequest<HvacPackage>(Request.Method.POST, url, hvacCommand,
+                                    headers, null, HvacPackage.class, response -> {
+                                Log.d(TAG, "HvacPackage = " + response.toString());
+                                hvacResponseSingleSubject.onSuccess(response);
+                            }, error -> {
+                                Log.d(TAG,
+                                        "error on Kamereon location response = " + error.toString());
+                                hvacResponseSingleSubject.onError(error);
+                            });
+                    this.backendTraffic.addToRequestQueue(request);
+                });
+
+        return hvacResponseSingleSubject;
     }
 }

@@ -72,4 +72,9 @@
     <string name="charge_state_waiting_current">Warte auf aktuelles Laden</string>
     <string name="charge_state_error">Ladefehler</string>
     <string name="charge_state_not_available">Nicht verfügbar</string>
+    <string name="button_charge">Laden</string>
+    <string name="button_aircondition_on">Start</string>
+    <string name="button_aircondition_off">Stop</string>
+    <string name="toast_aircondition_good">Klimatisierungskommando erfolgreich übermittelt...</string>
+    <string name="toast_aircondition_error">Klimatisierungskommando fehlerhaft...</string>
 </resources>

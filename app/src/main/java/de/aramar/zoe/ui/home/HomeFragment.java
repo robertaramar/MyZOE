@@ -14,12 +14,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,6 +41,7 @@ import de.aramar.zoe.data.Summary;
 import de.aramar.zoe.data.kamereon.battery.Attributes;
 import de.aramar.zoe.data.kamereon.battery.ChargeStateEnum;
 import de.aramar.zoe.data.kamereon.battery.PlugStateEnum;
+import de.aramar.zoe.data.kamereon.hvac.HvacCommandEnum;
 import de.aramar.zoe.data.kamereon.vehicles.Asset;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleLink;
 import de.aramar.zoe.network.BackendTraffic;
@@ -46,7 +49,7 @@ import de.aramar.zoe.utilities.Tools;
 import lombok.SneakyThrows;
 
 
-public class HomeFragment extends Fragment implements AdapterView.OnItemSelectedListener, SwipeRefreshLayout.OnRefreshListener {
+public class HomeFragment extends Fragment implements AdapterView.OnItemSelectedListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
     private static final String TAG = HomeFragment.class.getCanonicalName();
 
     private HomeViewModel homeViewModel;
@@ -95,6 +98,12 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private View batteryTimestampRow;
 
     private TextView batteryPlugSwitchText;
+
+    private Button buttonAirCondition;
+
+    private Button buttonCharge;
+
+    private Boolean hvacStatus;
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -186,6 +195,11 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         // Init the vehicles drop-down
         this.finSpinner = root.findViewById(R.id.fin_spinner);
         this.finSpinner.setOnItemSelectedListener(this);
+
+        this.buttonAirCondition = root.findViewById(R.id.button_air_condition_on);
+        this.buttonAirCondition.setOnClickListener(this);
+        this.buttonCharge = root.findViewById(R.id.button_air_condition_off);
+        this.buttonCharge.setOnClickListener(this);
 
         return root;
     }
@@ -279,7 +293,7 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      *
      * @param summary Received vehicle data (cockpit and battery)
      */
-    @SuppressLint("DefaultLocale")
+    @SuppressLint({"DefaultLocale", "ResourceAsColor"})
     private void updateData(Summary summary) {
         String labelVoid = this
                 .requireContext()
@@ -351,6 +365,22 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                     .getAttributes()
                     .getTotalMileage()));
         }
+
+        // Check if a HVAC command returned something
+        if (summary.getHvacCommand() != null) {
+            if (summary.getHvacStatus() != null) {
+                Toast
+                        .makeText(this.getContext(), R.string.toast_aircondition_good,
+                                Toast.LENGTH_LONG)
+                        .show();
+            } else {
+                Toast
+                        .makeText(this.getContext(), R.string.toast_aircondition_error,
+                                Toast.LENGTH_LONG)
+                        .show();
+            }
+            this.hvacStatus = summary.getHvacStatus();
+        }
     }
 
     private void setChargeState(Double chargingStatus, Map<String, Object> additionalProperties) {
@@ -412,5 +442,19 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private void triggerUpdate() {
         this.homeViewModel.updateCockpit(this.currentVin);
         this.homeViewModel.updateBatteryStatus(this.currentVin);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.button_air_condition_on:
+                this.homeViewModel.sendHvacCommand(this.currentVin, HvacCommandEnum.START);
+                break;
+            case R.id.button_air_condition_off:
+                this.homeViewModel.sendHvacCommand(this.currentVin, HvacCommandEnum.STOP);
+                break;
+            default:
+                break;
+        }
     }
 }
