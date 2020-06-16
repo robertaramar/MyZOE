@@ -1,5 +1,10 @@
 # Changelog
 
+#### v0.2.1
+
+ * Setting for pre-heating temperature target
+ * Setting for notifications and thresholds (not used, though)
+
 #### v0.2.0
 
  * Implemented HVAC start and cancel command

@@ -34,6 +34,9 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.SingleSubject;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 /**
  * Access to the Kamereon API.
  */
@@ -336,7 +339,10 @@ public class KamereonRx {
                     data.setType("HvacStart");
                     Attributes attributes = new Attributes();
                     attributes.setAction(hvacCommandEnum.getCommand());
-                    attributes.setTargetTemperature(21);
+                    String temperatureString =
+                            this.defaultSharedPreferences.getString("hvac_temperature", "21");
+                    int targetTemperature = max(18, min(Integer.valueOf(temperatureString), 26));
+                    attributes.setTargetTemperature(targetTemperature);
                     data.setAttributes(attributes);
                     hvacCommand.setData(data);
                     JacksonRequest<HvacPackage> request =

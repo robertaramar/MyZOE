@@ -1,5 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/pref_category_notifications">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="charge_notifications"
+            android:summary="@string/pref_notification_summary"
+            android:title="@string/pref_notification_switch"
+            app:enabled="false" />
+        <EditTextPreference
+            android:defaultValue="100"
+            android:icon="@drawable/ic_battery_full"
+            android:key="notification_level_full"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_notification_full"/>
+        <EditTextPreference
+            android:defaultValue="80"
+            android:icon="@drawable/ic_battery_half"
+            android:key="notification_level_medium"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_notification_medium" />
+        <EditTextPreference
+            android:defaultValue="60"
+            android:icon="@drawable/ic_battery_empty"
+            android:key="notification_level_low"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_notification_low" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_category_defaults">
+
+        <EditTextPreference
+            android:defaultValue="21"
+            android:icon="@drawable/ic_aircondition"
+            android:inputType="numberDecimal"
+            android:key="hvac_temperature"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_default_temperature" />
+    </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_category_ui">
         <SwitchPreference
             android:defaultValue="true"
