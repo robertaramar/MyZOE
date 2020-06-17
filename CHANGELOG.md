@@ -1,5 +1,9 @@
 # Changelog
 
+#### v0.2.2
+ * Implemented sending charge command when plugged and not charging
+ * Fixed proper HVAC command reporting (incl. command and temperature)
+
 #### v0.2.1
 
  * Setting for pre-heating temperature target

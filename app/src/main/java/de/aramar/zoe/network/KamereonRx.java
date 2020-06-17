@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.aramar.zoe.data.kamereon.battery.BatteryStatus;
+import de.aramar.zoe.data.kamereon.charge.ChargeCommandEnum;
+import de.aramar.zoe.data.kamereon.charge.ChargePackage;
 import de.aramar.zoe.data.kamereon.cockpit.Cockpit;
 import de.aramar.zoe.data.kamereon.hvac.Attributes;
 import de.aramar.zoe.data.kamereon.hvac.Data;
@@ -82,17 +84,16 @@ public class KamereonRx {
         this.application = application;
         this.backendTraffic = BackendTraffic.getInstance(application.getApplicationContext());
 
-        this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(
-                this.application.getApplicationContext());
+        this.defaultSharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this.application.getApplicationContext());
 
         this.vehiclesSubject = BehaviorSubject.create();
         this.gigyaRx = GigyaRx.getGigyaRx(this.application);
 
         // Make sure we always have the latest and greatest security data.
-        SecurityDataObservable
-                .getObservable()
-                .subscribeOn(Schedulers.io())
-                .subscribe(newSecurityData -> this.securityData = newSecurityData);
+        SecurityDataObservable.getObservable()
+                              .subscribeOn(Schedulers.io())
+                              .subscribe(newSecurityData -> this.securityData = newSecurityData);
     }
 
     /**
@@ -116,17 +117,15 @@ public class KamereonRx {
             Map<String, String> headers = new HashMap<>();
             headers.put("apikey", this.securityData.getWiredApiKey());
             headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
-            String url = MessageFormat.format("{0}/commerce/v1/persons/{1}?country={2}",
-                    this.securityData.getWiredTarget(), this.securityData.getGigyaPersonId(),
-                    this.securityData
-                            .getLocale()
-                            .getCountry());
+            String url =
+                    MessageFormat.format("{0}/commerce/v1/persons/{1}?country={2}", this.securityData.getWiredTarget(),
+                            this.securityData.getGigyaPersonId(), this.securityData.getLocale()
+                                                                                   .getCountry());
             JacksonRequest<Persons> request =
-                    new JacksonRequest<>(Request.Method.GET, url, headers, null, Persons.class,
-                            response -> {
-                                Log.d(TAG, "persons = " + response.toString());
-                                emitter.onSuccess(response);
-                            }, error -> {
+                    new JacksonRequest<>(Request.Method.GET, url, headers, null, Persons.class, response -> {
+                        Log.d(TAG, "persons = " + response.toString());
+                        emitter.onSuccess(response);
+                    }, error -> {
                         Log.d(TAG, "error on Kamereon persons response = " + error.toString());
                         emitter.onError(error);
                     });
@@ -141,32 +140,28 @@ public class KamereonRx {
     public Single<String> getKamereonJWT() {
         if (this.securityData.isJwtExpired() && this.securityData.isConfigured()) {
             SingleSubject<String> kamereonJwtSingleSubject = SingleSubject.create();
-            this.gigyaRx
-                    .getGigyaJwt()
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(gigyaJwt -> {
-                        Map<String, String> headers = new HashMap<>();
-                        headers.put("apikey", this.securityData.getWiredApiKey());
-                        headers.put("x-gigya-id_token", gigyaJwt);
-                        String url = MessageFormat.format(
-                                "{0}/commerce/v1/accounts/{1}/kamereon/token?country={2}",
-                                this.securityData.getWiredTarget(),
-                                this.securityData.getAccountId(), this.securityData
-                                        .getLocale()
-                                        .getCountry());
-                        JacksonRequest<Token> request =
-                                new JacksonRequest<>(Request.Method.GET, url, headers, null,
-                                        Token.class, response -> {
-                                    Log.d(TAG, "token = " + response.getAccessToken());
-                                    this.securityData.setKamereonJwt(response.getAccessToken());
-                                    kamereonJwtSingleSubject.onSuccess(response.getAccessToken());
-                                }, error -> {
-                                    Log.d(TAG,
-                                            "error on Kamereon token response = " + error.toString());
-                                    kamereonJwtSingleSubject.onError(error);
-                                });
-                        this.backendTraffic.addToRequestQueue(request);
-                    });
+            this.gigyaRx.getGigyaJwt()
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(gigyaJwt -> {
+                            Map<String, String> headers = new HashMap<>();
+                            headers.put("apikey", this.securityData.getWiredApiKey());
+                            headers.put("x-gigya-id_token", gigyaJwt);
+                            String url = MessageFormat.format("{0}/commerce/v1/accounts/{1}/kamereon/token?country={2}",
+                                    this.securityData.getWiredTarget(), this.securityData.getAccountId(),
+                                    this.securityData.getLocale()
+                                                     .getCountry());
+                            JacksonRequest<Token> request =
+                                    new JacksonRequest<>(Request.Method.GET, url, headers, null, Token.class,
+                                            response -> {
+                                                Log.d(TAG, "token = " + response.getAccessToken());
+                                                this.securityData.setKamereonJwt(response.getAccessToken());
+                                                kamereonJwtSingleSubject.onSuccess(response.getAccessToken());
+                                            }, error -> {
+                                        Log.d(TAG, "error on Kamereon token response = " + error.toString());
+                                        kamereonJwtSingleSubject.onError(error);
+                                    });
+                            this.backendTraffic.addToRequestQueue(request);
+                        });
             return kamereonJwtSingleSubject;
         } else {
             return Single.just(this.securityData.getKamereonJwt());
@@ -183,16 +178,13 @@ public class KamereonRx {
             headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
             headers.put("x-kamereon-authorization", "Bearer " + this.securityData.getKamereonJwt());
             String url = MessageFormat.format("{0}/commerce/v1/accounts/{1}/vehicles?country={2}",
-                    this.securityData.getWiredTarget(), this.securityData.getAccountId(),
-                    this.securityData
-                            .getLocale()
-                            .getCountry());
+                    this.securityData.getWiredTarget(), this.securityData.getAccountId(), this.securityData.getLocale()
+                                                                                                           .getCountry());
             JacksonRequest<Vehicles> request =
-                    new JacksonRequest<>(Request.Method.GET, url, headers, null, Vehicles.class,
-                            response -> {
-                                Log.d(TAG, "vehicles = " + response.toString());
-                                this.vehiclesSubject.onNext(response);
-                            }, error -> {
+                    new JacksonRequest<>(Request.Method.GET, url, headers, null, Vehicles.class, response -> {
+                        Log.d(TAG, "vehicles = " + response.toString());
+                        this.vehiclesSubject.onNext(response);
+                    }, error -> {
                         Log.d(TAG, "error on Kamereon vehicles response = " + error.toString());
                         this.vehiclesSubject.onError(error);
                     });
@@ -207,34 +199,29 @@ public class KamereonRx {
     public Single<BatteryStatus> getBatteryStatus(final String vin) {
         SingleSubject<BatteryStatus> batteryStatusSingleSubject = SingleSubject.create();
 
-        this
-                .getKamereonJWT()
-                .subscribeOn(Schedulers.io())
-                .subscribe(kamereonJwt -> {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("apikey", this.securityData.getWiredApiKey());
-                    headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
-                    headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
-                    String versionAPI = this.defaultSharedPreferences.getBoolean("api_battery_v2",
-                            true) ? "v2" : "v1";
-                    String url = MessageFormat.format(
-                            "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/battery-status?country={4}",
-                            this.securityData.getWiredTarget(), this.securityData.getAccountId(),
-                            versionAPI, vin, this.securityData
-                                    .getLocale()
-                                    .getCountry());
-                    JacksonRequest<BatteryStatus> request =
-                            new JacksonRequest<>(Request.Method.GET, url, headers, null,
-                                    BatteryStatus.class, response -> {
-                                Log.d(TAG, "battery = " + response.toString());
-                                batteryStatusSingleSubject.onSuccess(response);
-                            }, error -> {
-                                Log.d(TAG,
-                                        "error on Kamereon battery response = " + error.toString());
-                                batteryStatusSingleSubject.onError(error);
-                            });
-                    this.backendTraffic.addToRequestQueue(request);
-                });
+        this.getKamereonJWT()
+            .subscribeOn(Schedulers.io())
+            .subscribe(kamereonJwt -> {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", this.securityData.getWiredApiKey());
+                headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
+                String versionAPI = this.defaultSharedPreferences.getBoolean("api_battery_v2", true) ? "v2" : "v1";
+                String url = MessageFormat.format(
+                        "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/battery-status?country={4}",
+                        this.securityData.getWiredTarget(), this.securityData.getAccountId(), versionAPI, vin,
+                        this.securityData.getLocale()
+                                         .getCountry());
+                JacksonRequest<BatteryStatus> request =
+                        new JacksonRequest<>(Request.Method.GET, url, headers, null, BatteryStatus.class, response -> {
+                            Log.d(TAG, "battery = " + response.toString());
+                            batteryStatusSingleSubject.onSuccess(response);
+                        }, error -> {
+                            Log.d(TAG, "error on Kamereon battery response = " + error.toString());
+                            batteryStatusSingleSubject.onError(error);
+                        });
+                this.backendTraffic.addToRequestQueue(request);
+            });
 
         return batteryStatusSingleSubject;
     }
@@ -245,34 +232,29 @@ public class KamereonRx {
     public Single<Cockpit> getCockpit(String vin) {
         SingleSubject<Cockpit> cockpitSingleSubject = SingleSubject.create();
 
-        this
-                .getKamereonJWT()
-                .subscribeOn(Schedulers.io())
-                .subscribe(kamereonJwt -> {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("apikey", this.securityData.getWiredApiKey());
-                    headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
-                    headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
-                    String versionAPI = this.defaultSharedPreferences.getBoolean("api_cockpit_v2",
-                            true) ? "v2" : "v1";
-                    String url = MessageFormat.format(
-                            "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/cockpit?country={4}",
-                            this.securityData.getWiredTarget(), this.securityData.getAccountId(),
-                            versionAPI, vin, this.securityData
-                                    .getLocale()
-                                    .getCountry());
-                    JacksonRequest<Cockpit> request =
-                            new JacksonRequest<>(Request.Method.GET, url, headers, null,
-                                    Cockpit.class, response -> {
-                                Log.d(TAG, "cockpit = " + response.toString());
-                                cockpitSingleSubject.onSuccess(response);
-                            }, error -> {
-                                Log.d(TAG,
-                                        "error on Kamereon cockpit response = " + error.toString());
-                                cockpitSingleSubject.onError(error);
-                            });
-                    this.backendTraffic.addToRequestQueue(request);
-                });
+        this.getKamereonJWT()
+            .subscribeOn(Schedulers.io())
+            .subscribe(kamereonJwt -> {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", this.securityData.getWiredApiKey());
+                headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
+                String versionAPI = this.defaultSharedPreferences.getBoolean("api_cockpit_v2", true) ? "v2" : "v1";
+                String url = MessageFormat.format(
+                        "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/{2}/cars/{3}/cockpit?country={4}",
+                        this.securityData.getWiredTarget(), this.securityData.getAccountId(), versionAPI, vin,
+                        this.securityData.getLocale()
+                                         .getCountry());
+                JacksonRequest<Cockpit> request =
+                        new JacksonRequest<>(Request.Method.GET, url, headers, null, Cockpit.class, response -> {
+                            Log.d(TAG, "cockpit = " + response.toString());
+                            cockpitSingleSubject.onSuccess(response);
+                        }, error -> {
+                            Log.d(TAG, "error on Kamereon cockpit response = " + error.toString());
+                            cockpitSingleSubject.onError(error);
+                        });
+                this.backendTraffic.addToRequestQueue(request);
+            });
 
         return cockpitSingleSubject;
     }
@@ -283,32 +265,28 @@ public class KamereonRx {
     public Single<Location> getLocation(String vin) {
         SingleSubject<Location> locationSingleSubject = SingleSubject.create();
 
-        this
-                .getKamereonJWT()
-                .subscribeOn(Schedulers.io())
-                .subscribe(kamereonJwt -> {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("apikey", this.securityData.getWiredApiKey());
-                    headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
-                    headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
-                    String url = MessageFormat.format(
-                            "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/location?country={3}",
-                            this.securityData.getWiredTarget(), this.securityData.getAccountId(),
-                            vin, this.securityData
-                                    .getLocale()
-                                    .getCountry());
-                    JacksonRequest<Location> request =
-                            new JacksonRequest<>(Request.Method.GET, url, headers, null,
-                                    Location.class, response -> {
-                                Log.d(TAG, "location = " + response.toString());
-                                locationSingleSubject.onSuccess(response);
-                            }, error -> {
-                                Log.d(TAG,
-                                        "error on Kamereon location response = " + error.toString());
-                                locationSingleSubject.onError(error);
-                            });
-                    this.backendTraffic.addToRequestQueue(request);
-                });
+        this.getKamereonJWT()
+            .subscribeOn(Schedulers.io())
+            .subscribe(kamereonJwt -> {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("apikey", this.securityData.getWiredApiKey());
+                headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
+                String url = MessageFormat.format(
+                        "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/location?country={3}",
+                        this.securityData.getWiredTarget(), this.securityData.getAccountId(), vin,
+                        this.securityData.getLocale()
+                                         .getCountry());
+                JacksonRequest<Location> request =
+                        new JacksonRequest<>(Request.Method.GET, url, headers, null, Location.class, response -> {
+                            Log.d(TAG, "location = " + response.toString());
+                            locationSingleSubject.onSuccess(response);
+                        }, error -> {
+                            Log.d(TAG, "error on Kamereon location response = " + error.toString());
+                            locationSingleSubject.onError(error);
+                        });
+                this.backendTraffic.addToRequestQueue(request);
+            });
 
         return locationSingleSubject;
     }
@@ -319,45 +297,83 @@ public class KamereonRx {
     public Single<HvacPackage> postHVAC(String vin, HvacCommandEnum hvacCommandEnum) {
         SingleSubject<HvacPackage> hvacResponseSingleSubject = SingleSubject.create();
 
-        this
-                .getKamereonJWT()
-                .subscribeOn(Schedulers.io())
-                .subscribe(kamereonJwt -> {
-                    Map<String, String> headers = new HashMap<>();
-                    headers.put("Content-type", "application/vnd.api+json");
-                    headers.put("apikey", this.securityData.getWiredApiKey());
-                    headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
-                    headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
-                    String url = MessageFormat.format(
-                            "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/actions/hvac-start?country={3}",
-                            this.securityData.getWiredTarget(), this.securityData.getAccountId(),
-                            vin, this.securityData
-                                    .getLocale()
-                                    .getCountry());
-                    HvacPackage hvacCommand = new HvacPackage();
-                    Data data = new Data();
-                    data.setType("HvacStart");
-                    Attributes attributes = new Attributes();
-                    attributes.setAction(hvacCommandEnum.getCommand());
-                    String temperatureString =
-                            this.defaultSharedPreferences.getString("hvac_temperature", "21");
-                    int targetTemperature = max(18, min(Integer.valueOf(temperatureString), 26));
-                    attributes.setTargetTemperature(targetTemperature);
-                    data.setAttributes(attributes);
-                    hvacCommand.setData(data);
-                    JacksonRequest<HvacPackage> request =
-                            new JacksonRequest<HvacPackage>(Request.Method.POST, url, hvacCommand,
-                                    headers, null, HvacPackage.class, response -> {
-                                Log.d(TAG, "HvacPackage = " + response.toString());
-                                hvacResponseSingleSubject.onSuccess(response);
-                            }, error -> {
-                                Log.d(TAG,
-                                        "error on Kamereon location response = " + error.toString());
-                                hvacResponseSingleSubject.onError(error);
-                            });
-                    this.backendTraffic.addToRequestQueue(request);
-                });
+        this.getKamereonJWT()
+            .subscribeOn(Schedulers.io())
+            .subscribe(kamereonJwt -> {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-type", "application/vnd.api+json");
+                headers.put("apikey", this.securityData.getWiredApiKey());
+                headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
+                String url = MessageFormat.format(
+                        "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/actions/hvac-start?country={3}",
+                        this.securityData.getWiredTarget(), this.securityData.getAccountId(), vin,
+                        this.securityData.getLocale()
+                                         .getCountry());
+                HvacPackage hvacCommand = new HvacPackage();
+                Data data = new Data();
+                data.setType("HvacStart");
+                Attributes attributes = new Attributes();
+                attributes.setAction(hvacCommandEnum.getCommand());
+                String temperatureString = this.defaultSharedPreferences.getString("hvac_temperature", "21");
+                int targetTemperature = max(18, min(Integer.valueOf(temperatureString), 26));
+                attributes.setTargetTemperature(targetTemperature);
+                data.setAttributes(attributes);
+                hvacCommand.setData(data);
+                JacksonRequest<HvacPackage> request =
+                        new JacksonRequest<HvacPackage>(Request.Method.POST, url, hvacCommand, headers, null,
+                                HvacPackage.class, response -> {
+                            Log.d(TAG, "HvacPackage = " + response.toString());
+                            hvacResponseSingleSubject.onSuccess(response);
+                        }, error -> {
+                            Log.d(TAG, "error on Kamereon hvac command response = " + error.toString());
+                            hvacResponseSingleSubject.onError(error);
+                        });
+                this.backendTraffic.addToRequestQueue(request);
+            });
 
         return hvacResponseSingleSubject;
+    }
+
+    /**
+     * Post a command to start/stop the air-condition (pre-heating).
+     */
+    public Single<ChargePackage> postCharge(String vin) {
+        SingleSubject<ChargePackage> chargePackageSingleSubject = SingleSubject.create();
+
+        this.getKamereonJWT()
+            .subscribeOn(Schedulers.io())
+            .subscribe(kamereonJwt -> {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-type", "application/vnd.api+json");
+                headers.put("apikey", this.securityData.getWiredApiKey());
+                headers.put("x-gigya-id_token", this.securityData.getGigyaJwt());
+                headers.put("x-kamereon-authorization", "Bearer " + kamereonJwt);
+                String url = MessageFormat.format(
+                        "{0}/commerce/v1/accounts/{1}/kamereon/kca/car-adapter/v1/cars/{2}/actions/charging-start?country={3}",
+                        this.securityData.getWiredTarget(), this.securityData.getAccountId(), vin,
+                        this.securityData.getLocale()
+                                         .getCountry());
+                ChargePackage chargePackage = new ChargePackage();
+                de.aramar.zoe.data.kamereon.charge.Data data = new de.aramar.zoe.data.kamereon.charge.Data();
+                data.setType("ChargingStart");
+                de.aramar.zoe.data.kamereon.charge.Attributes attributes =
+                        new de.aramar.zoe.data.kamereon.charge.Attributes();
+                attributes.setAction(ChargeCommandEnum.START.getCommand());
+                data.setAttributes(attributes);
+                chargePackage.setData(data);
+                JacksonRequest<ChargePackage> request =
+                        new JacksonRequest<ChargePackage>(Request.Method.POST, url, chargePackage, headers, null,
+                                ChargePackage.class, response -> {
+                            Log.d(TAG, "ChargePackage = " + response.toString());
+                            chargePackageSingleSubject.onSuccess(response);
+                        }, error -> {
+                            Log.d(TAG, "error on Kamereon charge command response = " + error.toString());
+                            chargePackageSingleSubject.onError(error);
+                        });
+                this.backendTraffic.addToRequestQueue(request);
+            });
+
+        return chargePackageSingleSubject;
     }
 }

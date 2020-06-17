@@ -75,8 +75,10 @@
     <string name="button_charge">Laden</string>
     <string name="button_aircondition_on">Start</string>
     <string name="button_aircondition_off">Stop</string>
-    <string name="toast_aircondition_good">Klimatisierungskommando erfolgreich übermittelt...</string>
-    <string name="toast_aircondition_error">Klimatisierungskommando fehlerhaft...</string>
+    <string name="toast_aircondition_good">Klimatisierungskommando erfolgreich übermittelt. cmd:%s - temp:%d°</string>
+    <string name="toast_aircondition_error">Klimatisierungskommando fehlerhaft.</string>
+    <string name="toast_charge_good">Ladekommando erfolgreich übermittelt. cmd:%s</string>
+    <string name="toast_charge_error">Ladekommando fehlerhaft.</string>
     <string name="pref_category_notifications">Benachrichtigungen/Schwellen</string>
     <string name="pref_notification_low">Niedrige Ladung</string>
     <string name="pref_notification_medium">Mittlere Ladung</string>

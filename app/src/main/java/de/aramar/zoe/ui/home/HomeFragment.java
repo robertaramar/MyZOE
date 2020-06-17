@@ -110,65 +110,94 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         super.onActivityCreated(savedInstanceState);
         this.setHasOptionsMenu(true);
 
-        this.defaultSharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(this.getContext());
+        this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
-        this.imageLoader = BackendTraffic
-                .getInstance(this.getContext())
-                .getImageLoader();
+        this.imageLoader = BackendTraffic.getInstance(this.getContext())
+                                         .getImageLoader();
 
         this.homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
-        this.homeViewModel
-                .getSummary()
-                .observe(this.getViewLifecycleOwner(), summary -> {
-                    HomeFragment.this.updateData(summary);
-                    if (HomeFragment.this.swipeRefreshLayout.isRefreshing()) {
-                        HomeFragment.this.swipeRefreshLayout.setRefreshing(false);
-                    }
-                });
-        this.homeViewModel
-                .getVehicles()
-                .observe(this.getViewLifecycleOwner(), vehicles -> {
-                    Object[] zoes = Objects.requireNonNull(vehicles
-                            .getVehicleLinks()
-                            .stream()
-                            .filter(vehicleLink -> vehicleLink
-                                    .getVehicleDetails()
-                                    .getModel()
-                                    .getLabel()
-                                    .compareToIgnoreCase("ZOE") == 0)
-                            .toArray());
-                    if (zoes.length > 0) {
-                        ArrayAdapter<Object> vehiclesArrayAdapter =
-                                new ArrayAdapter<>(HomeFragment.this.requireContext(),
-                                        android.R.layout.simple_spinner_dropdown_item, zoes);
-                        vehiclesArrayAdapter.setDropDownViewResource(
-                                android.R.layout.simple_spinner_dropdown_item);
-                        HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
-                        if (zoes.length > 1) {
-                            HomeFragment.this.finSpinner.setEnabled(true);
-                            HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
-                        } else {
-                            if (this.defaultSharedPreferences.getBoolean("ui_show_vin_spinner",
-                                    false)) {
-                                HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
-                                HomeFragment.this.finSpinner.setEnabled(false);
-                            } else {
-                                // Disable if there is only one entry
-                                HomeFragment.this.finSpinner.setVisibility(View.GONE);
-                                this.changeCar((VehicleLink) zoes[0]);
-                            }
-                        }
-                    }
-                });
+        this.homeViewModel.getSummary()
+                          .observe(this.getViewLifecycleOwner(), summary -> {
+                              HomeFragment.this.updateData(summary);
+                              if (HomeFragment.this.swipeRefreshLayout.isRefreshing()) {
+                                  HomeFragment.this.swipeRefreshLayout.setRefreshing(false);
+                              }
+                          });
+        this.homeViewModel.getVehicles()
+                          .observe(this.getViewLifecycleOwner(), vehicles -> {
+                              Object[] zoes = Objects.requireNonNull(vehicles.getVehicleLinks()
+                                                                             .stream()
+                                                                             .filter(vehicleLink -> vehicleLink.getVehicleDetails()
+                                                                                                               .getModel()
+                                                                                                               .getLabel()
+                                                                                                               .compareToIgnoreCase(
+                                                                                                                       "ZOE") == 0)
+                                                                             .toArray());
+                              if (zoes.length > 0) {
+                                  ArrayAdapter<Object> vehiclesArrayAdapter =
+                                          new ArrayAdapter<>(HomeFragment.this.requireContext(),
+                                                  android.R.layout.simple_spinner_dropdown_item, zoes);
+                                  vehiclesArrayAdapter.setDropDownViewResource(
+                                          android.R.layout.simple_spinner_dropdown_item);
+                                  HomeFragment.this.finSpinner.setAdapter(vehiclesArrayAdapter);
+                                  if (zoes.length > 1) {
+                                      HomeFragment.this.finSpinner.setEnabled(true);
+                                      HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
+                                  } else {
+                                      if (this.defaultSharedPreferences.getBoolean("ui_show_vin_spinner", false)) {
+                                          HomeFragment.this.finSpinner.setVisibility(View.VISIBLE);
+                                          HomeFragment.this.finSpinner.setEnabled(false);
+                                      } else {
+                                          // Disable if there is only one entry
+                                          HomeFragment.this.finSpinner.setVisibility(View.GONE);
+                                          this.changeCar((VehicleLink) zoes[0]);
+                                      }
+                                  }
+                              }
+                          });
+        this.homeViewModel.getHvacPackage()
+                          .observe(this.getViewLifecycleOwner(), hvacPackage -> {
+                              if (hvacPackage.getData() != null && hvacPackage.getData()
+                                                                              .getId() != null) {
+                                  int targetTemperature = hvacPackage.getData()
+                                                                     .getAttributes()
+                                                                     .getTargetTemperature();
+                                  String command = hvacPackage.getData()
+                                                              .getAttributes()
+                                                              .getAction();
+                                  String toastText =
+                                          String.format(this.getString(R.string.toast_aircondition_good), command,
+                                                  targetTemperature);
+                                  Toast.makeText(this.getContext(), toastText, Toast.LENGTH_LONG)
+                                       .show();
+                              } else {
+                                  Toast.makeText(this.getContext(), R.string.toast_aircondition_error,
+                                          Toast.LENGTH_LONG)
+                                       .show();
+                              }
+                          });
+        this.homeViewModel.getChargePackage()
+                          .observe(this.getViewLifecycleOwner(), chargePackage -> {
+                              if (chargePackage.getData() != null && chargePackage.getData()
+                                                                                  .getId() != null) {
+                                  String command = chargePackage.getData()
+                                                                .getAttributes()
+                                                                .getAction();
+                                  String toastText = String.format(this.getString(R.string.toast_charge_good), command);
+                                  Toast.makeText(this.getContext(), toastText, Toast.LENGTH_LONG)
+                                       .show();
+                                  this.triggerUpdate();
+                              } else {
+                                  Toast.makeText(this.getContext(), R.string.toast_charge_error, Toast.LENGTH_LONG)
+                                       .show();
+                              }
+                          });
         this.swipeRefreshLayout.setRefreshing(true);
     }
 
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
         this.odometerValueTextView = root.findViewById(R.id.odometer_value);
-
         this.batteryTimestampValue = root.findViewById(R.id.battery_timestamp_value);
         this.batteryTimestampRow = root.findViewById(R.id.battery_timestamp_row);
         this.batteryValueTextView = root.findViewById(R.id.battery_level_value);
@@ -176,6 +205,7 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         this.batteryPlugSwitch.setClickable(false);
         this.batteryPlugSwitchText = root.findViewById(R.id.battery_plug_switch_text);
         this.batteryChargeSwitch = root.findViewById(R.id.battery_charge_switch);
+        this.batteryChargeSwitch.setOnClickListener(this);
         this.batteryChargeSwitch.setClickable(false);
         this.batteryChargeSwitchText = root.findViewById(R.id.battery_charge_switch_text);
         this.vehicleImage = root.findViewById(R.id.vehicleImage);
@@ -208,9 +238,8 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     @Override
     public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
         Log.i(TAG, "Got an item change to position = " + position + " id = " + id);
-        Object item = adapterView
-                .getAdapter()
-                .getItem(position);
+        Object item = adapterView.getAdapter()
+                                 .getItem(position);
         if (item instanceof VehicleLink) {
             this.changeCar((VehicleLink) item);
         }
@@ -249,42 +278,33 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         this.homeViewModel.updateCockpit(this.currentVin);
 
         // Try to get the image of the vehicle
-        List<Asset> assets = vehicle
-                .getVehicleDetails()
-                .getAssets();
+        List<Asset> assets = vehicle.getVehicleDetails()
+                                    .getAssets();
         if (assets != null) {
-            assets
-                    .stream()
-                    .filter(asset -> asset
-                            .getAssetType()
-                            .compareTo("PICTURE") == 0)
-                    .findFirst()
-                    .ifPresent(asset -> {
-                        asset
-                                .getRenditions()
-                                .stream()
-                                .filter(rendition -> rendition
-                                        .getResolutionType()
-                                        .compareTo("ONE_MYRENAULT_LARGE") == 0)
-                                .findFirst()
-                                .ifPresent(rendition -> {
-                                    this.imageLoader.get(rendition.getUrl(),
-                                            new ImageLoader.ImageListener() {
-                                                @Override
-                                                public void onResponse(
-                                                        ImageLoader.ImageContainer response,
-                                                        boolean isImmediate) {
-                                                    HomeFragment.this.vehicleImage.setImageBitmap(
-                                                            response.getBitmap());
-                                                }
+            assets.stream()
+                  .filter(asset -> asset.getAssetType()
+                                        .compareTo("PICTURE") == 0)
+                  .findFirst()
+                  .ifPresent(asset -> {
+                      asset.getRenditions()
+                           .stream()
+                           .filter(rendition -> rendition.getResolutionType()
+                                                         .compareTo("ONE_MYRENAULT_LARGE") == 0)
+                           .findFirst()
+                           .ifPresent(rendition -> {
+                               this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
+                                   @Override
+                                   public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
+                                       HomeFragment.this.vehicleImage.setImageBitmap(response.getBitmap());
+                                   }
 
-                                                @Override
-                                                public void onErrorResponse(VolleyError error) {
+                                   @Override
+                                   public void onErrorResponse(VolleyError error) {
 
-                                                }
-                                            });
-                                });
-                    });
+                                   }
+                               });
+                           });
+                  });
         }
     }
 
@@ -295,24 +315,19 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      */
     @SuppressLint({"DefaultLocale", "ResourceAsColor"})
     private void updateData(Summary summary) {
-        String labelVoid = this
-                .requireContext()
-                .getResources()
-                .getString(R.string.label_void);
-        if (summary.getBattery() != null && summary
-                .getBattery()
-                .getData() != null && summary
-                .getBattery()
-                .getData()
-                .getAttributes() != null) {
-            Attributes attributes = summary
-                    .getBattery()
-                    .getData()
-                    .getAttributes();
+        String labelVoid = this.requireContext()
+                               .getResources()
+                               .getString(R.string.label_void);
+        if (summary.getBattery() != null && summary.getBattery()
+                                                   .getData() != null && summary.getBattery()
+                                                                                .getData()
+                                                                                .getAttributes() != null) {
+            Attributes attributes = summary.getBattery()
+                                           .getData()
+                                           .getAttributes();
 
             if (attributes.getTimestamp() != null) {
-                this.batteryTimestampValue.setText(
-                        Tools.getLocalizedTimestamp(attributes.getTimestamp()));
+                this.batteryTimestampValue.setText(Tools.getLocalizedTimestamp(attributes.getTimestamp()));
                 this.batteryTimestampRow.setVisibility(View.VISIBLE);
             } else {
                 this.batteryTimestampRow.setVisibility(View.GONE);
@@ -324,71 +339,52 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
             this.batteryProgressBar.setProgress(
                     attributes.getBatteryLevel() != null ? attributes.getBatteryLevel() : 0);
 
-            this.setPlugState(attributes.getPlugStatus());
-
-            this.setChargeState(attributes.getChargingStatus(),
+            this.setChargeState(attributes.getChargingStatus(), attributes.getPlugStatus(),
                     attributes.getAdditionalProperties());
 
-            String batteryTemperature =
-                    (attributes.getBatteryTemperature() != null) ? this.toTemperatureString(
-                            attributes.getBatteryTemperature()) : labelVoid;
+            String batteryTemperature = (attributes.getBatteryTemperature() != null) ? this.toTemperatureString(
+                    attributes.getBatteryTemperature()) : labelVoid;
             this.batteryTemperatureTextView.setText(batteryTemperature);
 
-            String batteryAutonomy =
-                    (attributes.getBatteryAutonomy() != null) ? this.toOdometerString(attributes
-                            .getBatteryAutonomy()
-                            .doubleValue()) : labelVoid;
+            String batteryAutonomy = (attributes.getBatteryAutonomy() != null) ? this.toOdometerString(
+                    attributes.getBatteryAutonomy()
+                              .doubleValue()) : labelVoid;
             this.batteryAutonomyTextView.setText(batteryAutonomy);
 
             int visibility = View.GONE;
             if (attributes.getBatteryCapacity() != null) {
-                this.batteryCapacityTextView.setText(
-                        String.format("%d kWh", attributes.getBatteryCapacity()));
+                this.batteryCapacityTextView.setText(String.format("%d kWh", attributes.getBatteryCapacity()));
                 visibility = attributes.getBatteryCapacity() > 0 ? View.VISIBLE : View.GONE;
             }
             this.capacityRow.setVisibility(visibility);
 
-            String batteryEnergy =
-                    attributes.getBatteryAvailableEnergy() != null ? String.format("%d kWh",
-                            attributes.getBatteryAvailableEnergy()) : labelVoid;
+            String batteryEnergy = attributes.getBatteryAvailableEnergy() != null ? String.format("%d kWh",
+                    attributes.getBatteryAvailableEnergy()) : labelVoid;
             this.batteryEnergyTextView.setText(batteryEnergy);
 
-            String batteryRemainingTime =
-                    (attributes.getChargingRemainingTime() != null) ? String.format("%d m",
-                            attributes.getChargingRemainingTime()) : labelVoid;
+            String batteryRemainingTime = (attributes.getChargingRemainingTime() != null) ? String.format("%d m",
+                    attributes.getChargingRemainingTime()) : labelVoid;
             this.batteryRemainingTimeTextView.setText(batteryRemainingTime);
         }
         if (summary.getCockpit() != null) {
-            this.odometerValueTextView.setText(this.toOdometerString(summary
-                    .getCockpit()
-                    .getData()
-                    .getAttributes()
-                    .getTotalMileage()));
-        }
-
-        // Check if a HVAC command returned something
-        if (summary.getHvacCommand() != null) {
-            if (summary.getHvacStatus() != null) {
-                Toast
-                        .makeText(this.getContext(), R.string.toast_aircondition_good,
-                                Toast.LENGTH_LONG)
-                        .show();
-            } else {
-                Toast
-                        .makeText(this.getContext(), R.string.toast_aircondition_error,
-                                Toast.LENGTH_LONG)
-                        .show();
-            }
-            this.hvacStatus = summary.getHvacStatus();
+            this.odometerValueTextView.setText(this.toOdometerString(summary.getCockpit()
+                                                                            .getData()
+                                                                            .getAttributes()
+                                                                            .getTotalMileage()));
         }
     }
 
-    private void setChargeState(Double chargingStatus, Map<String, Object> additionalProperties) {
+    private void setChargeState(Double chargingStatus, Integer plugStatus, Map<String, Object> additionalProperties) {
+        PlugStateEnum plugStateEnum = PlugStateEnum.getEnumFromValue(plugStatus);
+        this.batteryPlugSwitch.setChecked(plugStateEnum.isPlugged());
+        this.batteryPlugSwitchText.setText(plugStateEnum.getStateDescription());
+
         if (chargingStatus != null) {
             // V2 API
             ChargeStateEnum chargeStateEnum = ChargeStateEnum.getEnumFromValue(chargingStatus);
             this.batteryChargeSwitch.setChecked(chargeStateEnum.isCharging());
             this.batteryChargeSwitchText.setText(chargeStateEnum.getStateDescription());
+            this.batteryChargeSwitch.setClickable(plugStateEnum.isPlugged() && !chargeStateEnum.isCharging());
         } else {
             // V1 API
             Object chargeStatus = null;
@@ -396,13 +392,9 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                 chargeStatus = additionalProperties.get("chargeStatus");
             }
             this.batteryChargeSwitch.setChecked(chargeStatus != null && (int) chargeStatus > 0);
+            this.batteryChargeSwitch.setClickable(
+                    plugStateEnum.isPlugged() && chargeStatus != null && (int) chargeStatus == 0);
         }
-    }
-
-    private void setPlugState(Integer plugStatus) {
-        PlugStateEnum plugStateEnum = PlugStateEnum.getEnumFromValue(plugStatus);
-        this.batteryPlugSwitch.setChecked(plugStateEnum.isPlugged());
-        this.batteryPlugSwitchText.setText(plugStateEnum.getStateDescription());
     }
 
     /**
@@ -415,8 +407,7 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         boolean isMiles = this.defaultSharedPreferences.getBoolean("units_distance_miles", false);
         Measure kilometers = new Measure(value, MeasureUnit.KILOMETER);
         Measure miles = new Measure(value / 1.60934, MeasureUnit.MILE);
-        MeasureFormat formatter =
-                MeasureFormat.getInstance(Tools.getSystemLocale(), MeasureFormat.FormatWidth.SHORT);
+        MeasureFormat formatter = MeasureFormat.getInstance(Tools.getSystemLocale(), MeasureFormat.FormatWidth.SHORT);
         return formatter.formatMeasures((isMiles) ? miles : kilometers);
     }
 
@@ -427,12 +418,10 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      * @return computed string
      */
     private String toTemperatureString(int value) {
-        boolean isFahrenheit =
-                this.defaultSharedPreferences.getBoolean("units_temperature_fahrenheit", false);
+        boolean isFahrenheit = this.defaultSharedPreferences.getBoolean("units_temperature_fahrenheit", false);
         Measure celsius = new Measure(value, MeasureUnit.CELSIUS);
         Measure fahrenheit = new Measure(value * 9 / 5 + 32, MeasureUnit.FAHRENHEIT);
-        MeasureFormat formatter =
-                MeasureFormat.getInstance(Tools.getSystemLocale(), MeasureFormat.FormatWidth.SHORT);
+        MeasureFormat formatter = MeasureFormat.getInstance(Tools.getSystemLocale(), MeasureFormat.FormatWidth.SHORT);
         return formatter.formatMeasures((isFahrenheit) ? fahrenheit : celsius);
     }
 
@@ -452,6 +441,9 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
                 break;
             case R.id.button_air_condition_off:
                 this.homeViewModel.sendHvacCommand(this.currentVin, HvacCommandEnum.STOP);
+                break;
+            case R.id.battery_charge_switch:
+                this.homeViewModel.sendChargeCommand(this.currentVin);
                 break;
             default:
                 break;

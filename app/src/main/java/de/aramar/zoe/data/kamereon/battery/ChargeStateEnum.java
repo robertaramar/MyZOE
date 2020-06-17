@@ -11,7 +11,7 @@ public enum ChargeStateEnum {
     NOT_IN_CHARGE(0.0, false, R.string.charge_state_not_in_charge), //
     WAITING_FOR_PLANNED_CHARGE(0.1, false, R.string.charge_state_waiting_planned), //
     CHARGE_ENDED(0.2, false, R.string.charge_state_charge_ended), //
-    WAITING_FOR_CURRENT_CHARGE(0.3, true, R.string.charge_state_waiting_current), //
+    WAITING_FOR_CURRENT_CHARGE(0.3, false, R.string.charge_state_waiting_current), //
     ENERGY_FLAP_OPENED(0.4, false, R.string.charge_state_flap_open), //
     CHARGE_IN_PROGRESS(1.0, true, R.string.charge_state_in_progress), //
     // This next is more accurately "not charging" (<= ZE40) or "error" (ZE50).
@@ -46,11 +46,10 @@ public enum ChargeStateEnum {
      * @return enum that is found, NOT_AVAILABLE if not found
      */
     public static ChargeStateEnum getEnumFromValue(double stateValue) {
-        return Arrays
-                .asList(ChargeStateEnum.values())
-                .stream()
-                .filter(chargeStateEnum -> chargeStateEnum.stateValue == stateValue)
-                .findFirst()
-                .orElse(NOT_AVAILABLE);
+        return Arrays.asList(ChargeStateEnum.values())
+                     .stream()
+                     .filter(chargeStateEnum -> chargeStateEnum.stateValue == stateValue)
+                     .findFirst()
+                     .orElse(NOT_AVAILABLE);
     }
 }
