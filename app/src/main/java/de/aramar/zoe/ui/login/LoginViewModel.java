@@ -36,19 +36,16 @@ public class LoginViewModel extends AndroidViewModel {
 
     public LoginViewModel(@NonNull Application application) {
         super(application);
-
-        SecurityDataObservable
-                .getObservable()
-                .subscribeOn(Schedulers.io())
-                .subscribe(newSecurityData -> {
-                    Log.d(TAG, "Security data change to " + newSecurityData
-                            .getStatus()
-                            .toString());
-                    LoginViewModel.this.liveSecurityDataContainer.postValue(newSecurityData);
-                });
         this.liveSecurityDataContainer = new MutableLiveData<>();
-
         this.loginController = LoginController.getLoginController(application);
+
+        SecurityDataObservable.getObservable()
+                              .subscribeOn(Schedulers.io())
+                              .subscribe(newSecurityData -> {
+                                  Log.d(TAG, "Security data change to " + newSecurityData.getStatus()
+                                                                                         .toString());
+                                  this.liveSecurityDataContainer.postValue(newSecurityData);
+                              });
     }
 
     /**

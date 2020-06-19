@@ -76,9 +76,7 @@
     <string name="button_aircondition_on">Start</string>
     <string name="button_aircondition_off">Stop</string>
     <string name="toast_aircondition_good">Klimatisierungskommando erfolgreich übermittelt. cmd:%s - temp:%d°</string>
-    <string name="toast_aircondition_error">Klimatisierungskommando fehlerhaft.</string>
     <string name="toast_charge_good">Ladekommando erfolgreich übermittelt. cmd:%s</string>
-    <string name="toast_charge_error">Ladekommando fehlerhaft.</string>
     <string name="pref_category_notifications">Benachrichtigungen/Schwellen</string>
     <string name="pref_notification_low">Niedrige Ladung</string>
     <string name="pref_notification_medium">Mittlere Ladung</string>
@@ -87,4 +85,11 @@
     <string name="pref_notification_summary">Schaltet Benachrichtigungen beim Laden an/aus</string>
     <string name="pref_category_defaults">Standardwerte</string>
     <string name="pref_default_temperature">Zieltemperatur</string>
+    <string name="error_alert_title">Fehlermeldung</string>
+    <string name="error_alert_line_status">Status : %d</string>
+    <string name="error_alert_line_error">Error : %s</string>
+    <string name="error_alert_line_path">Path : %s</string>
+    <string name="error_alert_line_timestamp">Timestamp : %s</string>
+    <string name="error_alert_line_message">Message : %s</string>
+    <string name="error_alert_unknown">Unbekannter Fehler</string>
 </resources>

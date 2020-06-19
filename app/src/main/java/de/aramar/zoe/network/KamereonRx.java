@@ -126,7 +126,7 @@ public class KamereonRx {
                         Log.d(TAG, "persons = " + response.toString());
                         emitter.onSuccess(response);
                     }, error -> {
-                        Log.d(TAG, "error on Kamereon persons response = " + error.toString());
+                        Log.d(TAG, "error on Kamereon persons response", error);
                         emitter.onError(error);
                     });
             this.backendTraffic.addToRequestQueue(request);
@@ -143,6 +143,7 @@ public class KamereonRx {
             this.gigyaRx.getGigyaJwt()
                         .subscribeOn(Schedulers.io())
                         .subscribe(gigyaJwt -> {
+                            this.securityData.setGigyaJwt(gigyaJwt);
                             Map<String, String> headers = new HashMap<>();
                             headers.put("apikey", this.securityData.getWiredApiKey());
                             headers.put("x-gigya-id_token", gigyaJwt);
@@ -153,17 +154,21 @@ public class KamereonRx {
                             JacksonRequest<Token> request =
                                     new JacksonRequest<>(Request.Method.GET, url, headers, null, Token.class,
                                             response -> {
-                                                Log.d(TAG, "token = " + response.getAccessToken());
+                                                Log.d(TAG, "new Kamereon token = " + response.getAccessToken());
                                                 this.securityData.setKamereonJwt(response.getAccessToken());
                                                 kamereonJwtSingleSubject.onSuccess(response.getAccessToken());
                                             }, error -> {
-                                        Log.d(TAG, "error on Kamereon token response = " + error.toString());
+                                        Log.d(TAG, "error on Kamereon token response", error);
                                         kamereonJwtSingleSubject.onError(error);
                                     });
                             this.backendTraffic.addToRequestQueue(request);
+                        }, throwable -> {
+                            Log.d(TAG, "error on Kamereon token response", throwable);
+                            kamereonJwtSingleSubject.onError(throwable);
                         });
             return kamereonJwtSingleSubject;
         } else {
+            Log.d(TAG, "old Kamereon token = " + this.securityData.getKamereonJwt());
             return Single.just(this.securityData.getKamereonJwt());
         }
     }
@@ -185,7 +190,7 @@ public class KamereonRx {
                         Log.d(TAG, "vehicles = " + response.toString());
                         this.vehiclesSubject.onNext(response);
                     }, error -> {
-                        Log.d(TAG, "error on Kamereon vehicles response = " + error.toString());
+                        Log.d(TAG, "error on Kamereon vehicles response", error);
                         this.vehiclesSubject.onError(error);
                     });
             this.backendTraffic.addToRequestQueue(request);
@@ -217,7 +222,7 @@ public class KamereonRx {
                             Log.d(TAG, "battery = " + response.toString());
                             batteryStatusSingleSubject.onSuccess(response);
                         }, error -> {
-                            Log.d(TAG, "error on Kamereon battery response = " + error.toString());
+                            Log.d(TAG, "error on Kamereon battery response", error);
                             batteryStatusSingleSubject.onError(error);
                         });
                 this.backendTraffic.addToRequestQueue(request);
@@ -250,7 +255,7 @@ public class KamereonRx {
                             Log.d(TAG, "cockpit = " + response.toString());
                             cockpitSingleSubject.onSuccess(response);
                         }, error -> {
-                            Log.d(TAG, "error on Kamereon cockpit response = " + error.toString());
+                            Log.d(TAG, "error on Kamereon cockpit response", error);
                             cockpitSingleSubject.onError(error);
                         });
                 this.backendTraffic.addToRequestQueue(request);
@@ -282,7 +287,7 @@ public class KamereonRx {
                             Log.d(TAG, "location = " + response.toString());
                             locationSingleSubject.onSuccess(response);
                         }, error -> {
-                            Log.d(TAG, "error on Kamereon location response = " + error.toString());
+                            Log.d(TAG, "error on Kamereon location response", error);
                             locationSingleSubject.onError(error);
                         });
                 this.backendTraffic.addToRequestQueue(request);
@@ -326,7 +331,7 @@ public class KamereonRx {
                             Log.d(TAG, "HvacPackage = " + response.toString());
                             hvacResponseSingleSubject.onSuccess(response);
                         }, error -> {
-                            Log.d(TAG, "error on Kamereon hvac command response = " + error.toString());
+                            Log.d(TAG, "error on Kamereon hvac command response", error);
                             hvacResponseSingleSubject.onError(error);
                         });
                 this.backendTraffic.addToRequestQueue(request);
@@ -368,7 +373,7 @@ public class KamereonRx {
                             Log.d(TAG, "ChargePackage = " + response.toString());
                             chargePackageSingleSubject.onSuccess(response);
                         }, error -> {
-                            Log.d(TAG, "error on Kamereon charge command response = " + error.toString());
+                            Log.d(TAG, "error on Kamereon charge command response", error);
                             chargePackageSingleSubject.onError(error);
                         });
                 this.backendTraffic.addToRequestQueue(request);

@@ -78,9 +78,7 @@
     <string name="button_aircondition_on">Start</string>
     <string name="button_aircondition_off">Stop</string>
     <string name="toast_aircondition_good">Aircondition command successfully transmitted. cmd:%s - temp:%d°</string>
-    <string name="toast_aircondition_error">Aircondition command terminated with failure.</string>
     <string name="toast_charge_good">Charge command successfully transmitted. cmd:%s</string>
-    <string name="toast_charge_error">Charge command terminated with failure.</string>
     <string name="pref_category_notifications">Notifications/Thresholds</string>
     <string name="pref_notification_low">Low level</string>
     <string name="pref_notification_medium">Medium level</string>
@@ -89,4 +87,11 @@
     <string name="pref_notification_summary">Switches notifications on/off while in charge</string>
     <string name="pref_category_defaults">Defaults</string>
     <string name="pref_default_temperature">Target temperature</string>
+    <string name="error_alert_title">Error message</string>
+    <string name="error_alert_line_status">Status : %d</string>
+    <string name="error_alert_line_error">Error : %s</string>
+    <string name="error_alert_line_path">Path : %s</string>
+    <string name="error_alert_line_timestamp">Timestamp : %s</string>
+    <string name="error_alert_line_message">Message : %s</string>
+    <string name="error_alert_unknown">Unknown error</string>
 </resources>

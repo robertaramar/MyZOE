@@ -1,5 +1,12 @@
 # Changelog
 
+#### v0.2.3
+
+ * Decoupled battery and cockpit from summary
+ * Unified error model for all Kamereon calls
+ * Error handling and display in "Status" and "Location" fragment
+ * Fixed expired Gigya JWT on re-authentication
+
 #### v0.2.2
  * Implemented sending charge command when plugged and not charging
  * Fixed proper HVAC command reporting (incl. command and temperature)

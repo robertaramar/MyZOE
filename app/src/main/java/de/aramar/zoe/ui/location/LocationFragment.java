@@ -26,7 +26,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.List;
 
 import de.aramar.zoe.R;
-import de.aramar.zoe.data.kamereon.location.Location;
+import de.aramar.zoe.data.LocationData;
+import de.aramar.zoe.data.kamereon.location.Attributes;
 import de.aramar.zoe.data.kamereon.vehicles.Asset;
 import de.aramar.zoe.data.kamereon.vehicles.Rendition;
 import de.aramar.zoe.data.kamereon.vehicles.VehicleDetails;
@@ -48,49 +49,46 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
 
     private String vin;
 
-    private Location location;
+    private LocationData locationData;
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         this.setHasOptionsMenu(true);
 
-        this.imageLoader = BackendTraffic
-                .getInstance(this.getContext())
-                .getImageLoader();
+        this.imageLoader = BackendTraffic.getInstance(this.getContext())
+                                         .getImageLoader();
 
         this.homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
-        this.homeViewModel
-                .getVehicles()
-                .observe(this.getViewLifecycleOwner(), vehicles -> {
-                    this.vin = vehicles
-                            .getVehicleLinks()
-                            .get(0)
-                            .getVin();
-                    this.homeViewModel.updateLocation(this.vin);
-                    this.loadMarkerImage(vehicles
-                            .getVehicleLinks()
-                            .get(0)
-                            .getVehicleDetails());
-                });
-        this.homeViewModel
-                .getLocation()
-                .observe(this.getViewLifecycleOwner(), location -> {
-                    this.location = location;
-                    if (this.mMap != null) {
-                        this.setMarker(location);
-                    }
-                });
+        this.homeViewModel.getVehicles()
+                          .observe(this.getViewLifecycleOwner(), vehicles -> {
+                              this.vin = vehicles.getVehicleLinks()
+                                                 .get(0)
+                                                 .getVin();
+                              this.homeViewModel.updateLocation(this.vin);
+                              this.loadMarkerImage(vehicles.getVehicleLinks()
+                                                           .get(0)
+                                                           .getVehicleDetails());
+                          });
+        this.homeViewModel.getLocationData()
+                          .observe(this.getViewLifecycleOwner(), locationData -> {
+                              if (locationData.getThrowable() == null) {
+                                  this.locationData = locationData;
+                                  if (this.mMap != null) {
+                                      this.setMarker(locationData);
+                                  }
+                              } else {
+                                  Tools.displayError(locationData.getThrowable(), this.getContext());
+                              }
+                          });
     }
 
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         this.homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         View root = inflater.inflate(R.layout.fragment_location, container, false);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) this
-                .getChildFragmentManager()
-                .findFragmentById(R.id.map);
+        SupportMapFragment mapFragment = (SupportMapFragment) this.getChildFragmentManager()
+                                                                  .findFragmentById(R.id.map);
         assert mapFragment != null;
         mapFragment.getMapAsync(this);
         return root;
@@ -125,8 +123,8 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         this.mMap = googleMap;
-        if (this.location != null) {
-            this.setMarker(this.location);
+        if (this.locationData != null) {
+            this.setMarker(this.locationData);
         }
     }
 
@@ -135,32 +133,19 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
      *
      * @param location Location object received from Kamereon framework
      */
-    private void setMarker(Location location) {
-        if (location != null && location.getData() != null && location
-                .getData()
-                .getAttributes() != null) {
+    private void setMarker(LocationData location) {
+        if (location.getThrowable() == null) {
             // Add a marker in Sydney and move the camera
-            LatLng zoePosition = new LatLng(location
-                    .getData()
-                    .getAttributes()
-                    .getGpsLatitude(), location
-                    .getData()
-                    .getAttributes()
-                    .getGpsLongitude());
-            this.vehicleMarker = this.mMap.addMarker(new MarkerOptions()
-                    .position(zoePosition)
-                    .snippet(Tools.getLocalizedTimestamp(location
-                            .getData()
-                            .getAttributes()
-                            .getLastUpdateTime()))
-                    .title(location
-                            .getData()
-                            .getId()));
+            Attributes locationAttributes = location.getAttributes();
+            LatLng zoePosition = new LatLng(locationAttributes.getGpsLatitude(), locationAttributes.getGpsLongitude());
+            this.vehicleMarker = this.mMap.addMarker(new MarkerOptions().position(zoePosition)
+                                                                        .snippet(Tools.getLocalizedTimestamp(
+                                                                                locationAttributes.getLastUpdateTime()))
+                                                                        .title(this.vin));
             if (this.vehicleMarkerBitmapDescriptor != null) {
                 this.vehicleMarker.setIcon(this.vehicleMarkerBitmapDescriptor);
             }
-            this.mMap.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(zoePosition, 15.0f)); // TODO: settings
+            this.mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(zoePosition, 15.0f)); // TODO: settings
         }
     }
 
@@ -169,23 +154,19 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         List<Asset> assets = vehicle.getAssets();
         for (int i = 0; i < assets.size(); i++) {
             Asset asset = assets.get(i);
-            if (asset
-                    .getAssetType()
-                    .compareTo("PICTURE") == 0) {
+            if (asset.getAssetType()
+                     .compareTo("PICTURE") == 0) {
                 List<Rendition> renditions = asset.getRenditions();
                 for (int j = 0; j < renditions.size(); j++) {
                     Rendition rendition = renditions.get(j);
-                    if (rendition
-                            .getResolutionType()
-                            .compareTo("ONE_MYRENAULT_SMALL") == 0) {
+                    if (rendition.getResolutionType()
+                                 .compareTo("ONE_MYRENAULT_SMALL") == 0) {
                         this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
                             @Override
-                            public void onResponse(ImageLoader.ImageContainer response,
-                                                   boolean isImmediate) {
+                            public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
                                 if (response.getBitmap() != null) {
                                     LocationFragment.this.vehicleMarkerBitmapDescriptor =
-                                            BitmapDescriptorFactory.fromBitmap(
-                                                    response.getBitmap());
+                                            BitmapDescriptorFactory.fromBitmap(response.getBitmap());
                                     if (LocationFragment.this.vehicleMarker != null) {
                                         LocationFragment.this.vehicleMarker.setIcon(
                                                 LocationFragment.this.vehicleMarkerBitmapDescriptor);

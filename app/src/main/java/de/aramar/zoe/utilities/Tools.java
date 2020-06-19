@@ -22,6 +22,7 @@
 
 package de.aramar.zoe.utilities;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -31,12 +32,22 @@ import android.graphics.PorterDuffColorFilter;
 import android.os.Build;
 import android.util.Log;
 
+import com.android.volley.VolleyError;
+
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
+import java.util.Objects;
+
+import de.aramar.zoe.R;
+import de.aramar.zoe.data.kamereon.error.ErrorBody;
+import de.aramar.zoe.data.kamereon.error.ErrorEnvelope;
+import de.aramar.zoe.network.Mapper;
 
 public class Tools {
 
@@ -58,15 +69,13 @@ public class Tools {
 
     public static Locale getSystemLocale() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return Resources
-                    .getSystem()
-                    .getConfiguration()
-                    .getLocales()
-                    .get(0);
+            return Resources.getSystem()
+                            .getConfiguration()
+                            .getLocales()
+                            .get(0);
         } else {
-            return Resources
-                    .getSystem()
-                    .getConfiguration().locale;
+            return Resources.getSystem()
+                            .getConfiguration().locale;
         }
     }
 
@@ -74,10 +83,9 @@ public class Tools {
         String formattedTimestamp = stringTimestamp;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             try { // Fixes bug #3
-                DateTimeFormatter formatter = DateTimeFormatter
-                        .ofLocalizedDateTime(FormatStyle.SHORT)
-                        .withLocale(Locale.getDefault())
-                        .withZone(ZoneId.systemDefault());
+                DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                                                               .withLocale(Locale.getDefault())
+                                                               .withZone(ZoneId.systemDefault());
                 if (stringTimestamp.contains("Z")) { // Ph2 seems to report zulu time
                     Instant instant = Instant.parse(stringTimestamp);
                     formattedTimestamp = formatter.format(instant);
@@ -86,10 +94,82 @@ public class Tools {
                     formattedTimestamp = formatter.format(offsetDateTime);
                 }
             } catch (Exception e) {
-                Log.d(Tools.class.getCanonicalName(),
-                        "Cannot parse timestamp of " + stringTimestamp);
+                Log.d(Tools.class.getCanonicalName(), "Cannot parse timestamp of " + stringTimestamp);
             }
         }
         return formattedTimestamp;
+    }
+
+    /**
+     * @param throwable A throwable which information shall be displayed
+     * @param context   A context to be used to address the UI
+     */
+    public static void displayError(Throwable throwable, Context context) {
+        ErrorBody errorBody = new ErrorBody();
+        // If all goes wrong, it' an unknown error ;-)
+        errorBody.setError(context.getString(R.string.error_alert_unknown));
+        if (throwable instanceof VolleyError) {
+            VolleyError volleyError = (VolleyError) throwable;
+            if (volleyError.networkResponse != null) {
+                errorBody.setStatus(volleyError.networkResponse.statusCode);
+
+                if (volleyError.networkResponse.data != null) {
+                    String jsonEnvelope = new String(volleyError.networkResponse.data);
+                    ErrorEnvelope errorEnvelope = Mapper.object(jsonEnvelope, ErrorEnvelope.class);
+                    errorBody = CollectionUtils.emptyIfNull(errorEnvelope.getErrors())
+                                               .stream()
+                                               .filter(Objects::nonNull)
+                                               .map(error -> {
+                                                   String text = error.getErrorMessage()
+                                                                      .replaceAll("\\\\", "");
+                                                   // if it's not JSON in the error-message, make one up
+                                                   if (!text.startsWith("{")) {
+                                                       ErrorBody tmpErrorBody = new ErrorBody();
+                                                       tmpErrorBody.setStatus(volleyError.networkResponse.statusCode);
+                                                       tmpErrorBody.setError(text);
+                                                       text = Mapper.string(tmpErrorBody);
+                                                   }
+                                                   return text;
+                                               })
+                                               .map(jsonBody -> {
+                                                   return Mapper.object(jsonBody, ErrorBody.class);
+                                               })
+                                               .filter(Objects::nonNull)
+                                               .findFirst()
+                                               .orElse(errorBody);
+                }
+            }
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        if (errorBody.getStatus() != null) {
+            stringBuilder.append(
+                    String.format(context.getString(R.string.error_alert_line_status), errorBody.getStatus()));
+        }
+        if (errorBody.getPath() != null) {
+            stringBuilder.append("\n");
+            stringBuilder.append(String.format(context.getString(R.string.error_alert_line_path), errorBody.getPath()));
+        }
+        if (errorBody.getError() != null) {
+            stringBuilder.append("\n");
+            stringBuilder.append(
+                    String.format(context.getString(R.string.error_alert_line_error), errorBody.getError()));
+        }
+        if (errorBody.getMessage() != null) {
+            stringBuilder.append("\n");
+            stringBuilder.append(
+                    String.format(context.getString(R.string.error_alert_line_message), errorBody.getMessage()));
+        }
+        if (errorBody.getTimestamp() != null) {
+            stringBuilder.append("\n");
+            stringBuilder.append(
+                    String.format(context.getString(R.string.error_alert_line_timestamp), errorBody.getTimestamp()));
+        }
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(context);
+        alert.setTitle(R.string.error_alert_title);
+        alert.setMessage(stringBuilder);
+        alert.setPositiveButton("OK", null);
+        alert.show();
     }
 }
