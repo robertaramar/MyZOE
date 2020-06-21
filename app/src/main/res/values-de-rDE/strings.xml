@@ -92,4 +92,5 @@
     <string name="error_alert_line_timestamp">Timestamp : %s</string>
     <string name="error_alert_line_message">Message : %s</string>
     <string name="error_alert_unknown">Unbekannter Fehler</string>
+    <string name="pref_cmd_cockpit">Cockpit abrufen</string>
 </resources>

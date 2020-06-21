@@ -68,6 +68,12 @@
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_category_api">
         <SwitchPreference
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:defaultValue="true"
+            android:key="cmd_cockpit"
+            android:title="@string/pref_cmd_cockpit" />
+        <SwitchPreference
             android:defaultValue="true"
             android:key="api_cockpit_v2"
             android:summaryOff="@string/pref_api_using_v1"
