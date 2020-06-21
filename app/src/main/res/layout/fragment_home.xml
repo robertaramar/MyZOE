@@ -49,7 +49,8 @@
 
                 <TableRow
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:id="@+id/cockpit_title_row">
 
                     <TextView
                         android:id="@+id/title_cockpit_information"
@@ -73,7 +74,8 @@
 
                 <TableRow
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:id="@+id/cockpit_row">
 
                     <TextView
                         android:id="@+id/odometer_label"

@@ -109,6 +109,10 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
 
     private Boolean hvacStatus;
 
+    private View cockpitRow;
+
+    private View cockpitTitleRow;
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -117,25 +121,27 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
         this.defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getContext());
 
         this.imageLoader = BackendTraffic.getInstance(this.getContext())
-                                         .getImageLoader();
+                .getImageLoader();
 
         this.homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         this.homeViewModel.getVehicles()
-                          .observe(this.getViewLifecycleOwner(), // Disable if there is only one entry
-                                  this::onVehicles);
+                .observe(this.getViewLifecycleOwner(), // Disable if there is only one entry
+                        this::onVehicles);
         this.homeViewModel.getBatteryData()
-                          .observe(this.getViewLifecycleOwner(), this::onBatteryData);
+                .observe(this.getViewLifecycleOwner(), this::onBatteryData);
         this.homeViewModel.getCockpitData()
-                          .observe(this.getViewLifecycleOwner(), this::onCockpitData);
+                .observe(this.getViewLifecycleOwner(), this::onCockpitData);
         this.homeViewModel.getHvacData()
-                          .observe(this.getViewLifecycleOwner(), this::onHvacData);
+                .observe(this.getViewLifecycleOwner(), this::onHvacData);
         this.homeViewModel.getChargeData()
-                          .observe(this.getViewLifecycleOwner(), this::onChargeData);
+                .observe(this.getViewLifecycleOwner(), this::onChargeData);
         this.swipeRefreshLayout.setRefreshing(true);
     }
 
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
+        this.cockpitRow = root.findViewById(R.id.cockpit_row);
+        this.cockpitTitleRow = root.findViewById(R.id.cockpit_title_row);
         this.odometerValueTextView = root.findViewById(R.id.odometer_value);
         this.batteryTimestampValue = root.findViewById(R.id.battery_timestamp_value);
         this.batteryTimestampRow = root.findViewById(R.id.battery_timestamp_row);
@@ -178,7 +184,7 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
         Log.i(TAG, "Got an item change to position = " + position + " id = " + id);
         Object item = adapterView.getAdapter()
-                                 .getItem(position);
+                .getItem(position);
         if (item instanceof VehicleLink) {
             this.changeCar((VehicleLink) item);
         }
@@ -230,37 +236,36 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private void changeCar(VehicleLink vehicle) {
         Log.i(TAG, "Vehicle = " + vehicle);
         this.currentVin = vehicle.getVin();
-        this.homeViewModel.updateBatteryStatus(this.currentVin);
-        this.homeViewModel.updateCockpit(this.currentVin);
-
+        this.triggerUpdate();
         // Try to get the image of the vehicle
         List<Asset> assets = vehicle.getVehicleDetails()
-                                    .getAssets();
+                .getAssets();
         if (assets != null) {
             assets.stream()
-                  .filter(asset -> asset.getAssetType()
-                                        .compareTo("PICTURE") == 0)
-                  .findFirst()
-                  .ifPresent(asset -> {
-                      asset.getRenditions()
-                           .stream()
-                           .filter(rendition -> rendition.getResolutionType()
-                                                         .compareTo("ONE_MYRENAULT_LARGE") == 0)
-                           .findFirst()
-                           .ifPresent(rendition -> {
-                               this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
-                                   @Override
-                                   public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
-                                       HomeFragment.this.vehicleImage.setImageBitmap(response.getBitmap());
-                                   }
+                    .filter(asset -> asset.getAssetType()
+                            .compareTo("PICTURE") == 0)
+                    .findFirst()
+                    .ifPresent(asset -> {
+                        asset.getRenditions()
+                                .stream()
+                                .filter(rendition -> rendition.getResolutionType()
+                                        .compareTo("ONE_MYRENAULT_LARGE") == 0)
+                                .findFirst()
+                                .ifPresent(rendition -> {
+                                    this.imageLoader.get(rendition.getUrl(), new ImageLoader.ImageListener() {
+                                        @Override
+                                        public void onResponse(ImageLoader.ImageContainer response,
+                                                               boolean isImmediate) {
+                                            HomeFragment.this.vehicleImage.setImageBitmap(response.getBitmap());
+                                        }
 
-                                   @Override
-                                   public void onErrorResponse(VolleyError error) {
+                                        @Override
+                                        public void onErrorResponse(VolleyError error) {
 
-                                   }
-                               });
-                           });
-                  });
+                                        }
+                                    });
+                                });
+                    });
         }
     }
 
@@ -272,8 +277,8 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     @SuppressLint({"DefaultLocale"})
     private void updateBatteryData(BatteryData batteryData) {
         String labelVoid = this.requireContext()
-                               .getResources()
-                               .getString(R.string.label_void);
+                .getResources()
+                .getString(R.string.label_void);
         Attributes attributes = batteryData.getAttributes();
 
         if (attributes.getTimestamp() != null) {
@@ -297,7 +302,7 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
 
         String batteryAutonomy = (attributes.getBatteryAutonomy() != null) ? this.toOdometerString(
                 attributes.getBatteryAutonomy()
-                          .doubleValue()) : labelVoid;
+                        .doubleValue()) : labelVoid;
         this.batteryAutonomyTextView.setText(batteryAutonomy);
 
         int visibility = View.GONE;
@@ -322,8 +327,12 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      * @param cockpitData Received vehicle cockpit data
      */
     private void updateCockpitData(CockpitData cockpitData) {
-        this.odometerValueTextView.setText(this.toOdometerString(cockpitData.getAttributes()
-                                                                            .getTotalMileage()));
+        if (this.defaultSharedPreferences.getBoolean("cmd_cockpit", true)) {
+            this.cockpitRow.setVisibility(View.VISIBLE);
+            this.cockpitTitleRow.setVisibility(View.VISIBLE);
+            this.odometerValueTextView.setText(this.toOdometerString(cockpitData.getAttributes()
+                    .getTotalMileage()));
+        }
     }
 
     private void setChargeState(Double chargingStatus, Integer plugStatus, Map<String, Object> additionalProperties) {
@@ -353,17 +362,22 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
      * Worker for triggering the update from swipe2refresh as well as from menu action.
      */
     private void triggerUpdate() {
-        this.homeViewModel.updateCockpit(this.currentVin);
+        if (this.defaultSharedPreferences.getBoolean("cmd_cockpit", true)) {
+            this.homeViewModel.updateCockpit(this.currentVin);
+        } else {
+            this.cockpitTitleRow.setVisibility(View.GONE);
+            this.cockpitRow.setVisibility(View.GONE);
+        }
         this.homeViewModel.updateBatteryStatus(this.currentVin);
     }
 
     private void onChargeData(ChargeData chargeData) {
         if (chargeData.getThrowable() == null) {
             String command = chargeData.getAttributes()
-                                       .getAction();
+                    .getAction();
             String toastText = String.format(this.getString(R.string.toast_charge_good), command);
             Toast.makeText(this.getContext(), toastText, Toast.LENGTH_LONG)
-                 .show();
+                    .show();
             this.triggerUpdate();
         } else {
             Tools.displayError(chargeData.getThrowable(), this.getContext());
@@ -373,13 +387,13 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private void onHvacData(HvacData hvacData) {
         if (hvacData.getThrowable() == null) {
             int targetTemperature = hvacData.getAttributes()
-                                            .getTargetTemperature();
+                    .getTargetTemperature();
             String command = hvacData.getAttributes()
-                                     .getAction();
+                    .getAction();
             String toastText =
                     String.format(this.getString(R.string.toast_aircondition_good), command, targetTemperature);
             Toast.makeText(this.getContext(), toastText, Toast.LENGTH_LONG)
-                 .show();
+                    .show();
         } else {
             Tools.displayError(hvacData.getThrowable(), this.getContext());
         }
@@ -415,13 +429,12 @@ public class HomeFragment extends Fragment implements AdapterView.OnItemSelected
     private void onVehicles(Vehicles vehicles) {
         // Filter out all non-ZOE vehicles
         Object[] zoes = Objects.requireNonNull(vehicles.getVehicleLinks()
-                                                       .stream()
-                                                       .filter(vehicleLink -> vehicleLink.getVehicleDetails()
-                                                                                         .getModel()
-                                                                                         .getLabel()
-                                                                                         .compareToIgnoreCase(
-                                                                                                 "ZOE") == 0)
-                                                       .toArray());
+                .stream()
+                .filter(vehicleLink -> vehicleLink.getVehicleDetails()
+                        .getModel()
+                        .getLabel()
+                        .compareToIgnoreCase("ZOE") == 0)
+                .toArray());
         // if there is/are ZOE(s)
         if (zoes.length > 0) {
             ArrayAdapter<Object> vehiclesArrayAdapter =

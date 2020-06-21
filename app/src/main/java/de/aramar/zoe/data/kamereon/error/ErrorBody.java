@@ -15,20 +15,11 @@ import lombok.Data;
 @Data
 public class ErrorBody {
 
-    @JsonProperty("timestamp")
-    private String timestamp;
-
     @JsonProperty("status")
     private Integer status;
 
     @JsonProperty("error")
     private String error;
-
-    @JsonProperty("message")
-    private String message;
-
-    @JsonProperty("path")
-    private String path;
 
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();

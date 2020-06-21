@@ -41,6 +41,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -70,12 +73,12 @@ public class Tools {
     public static Locale getSystemLocale() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             return Resources.getSystem()
-                            .getConfiguration()
-                            .getLocales()
-                            .get(0);
+                    .getConfiguration()
+                    .getLocales()
+                    .get(0);
         } else {
             return Resources.getSystem()
-                            .getConfiguration().locale;
+                    .getConfiguration().locale;
         }
     }
 
@@ -84,8 +87,8 @@ public class Tools {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             try { // Fixes bug #3
                 DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-                                                               .withLocale(Locale.getDefault())
-                                                               .withZone(ZoneId.systemDefault());
+                        .withLocale(Locale.getDefault())
+                        .withZone(ZoneId.systemDefault());
                 if (stringTimestamp.contains("Z")) { // Ph2 seems to report zulu time
                     Instant instant = Instant.parse(stringTimestamp);
                     formattedTimestamp = formatter.format(instant);
@@ -117,26 +120,26 @@ public class Tools {
                     String jsonEnvelope = new String(volleyError.networkResponse.data);
                     ErrorEnvelope errorEnvelope = Mapper.object(jsonEnvelope, ErrorEnvelope.class);
                     errorBody = CollectionUtils.emptyIfNull(errorEnvelope.getErrors())
-                                               .stream()
-                                               .filter(Objects::nonNull)
-                                               .map(error -> {
-                                                   String text = error.getErrorMessage()
-                                                                      .replaceAll("\\\\", "");
-                                                   // if it's not JSON in the error-message, make one up
-                                                   if (!text.startsWith("{")) {
-                                                       ErrorBody tmpErrorBody = new ErrorBody();
-                                                       tmpErrorBody.setStatus(volleyError.networkResponse.statusCode);
-                                                       tmpErrorBody.setError(text);
-                                                       text = Mapper.string(tmpErrorBody);
-                                                   }
-                                                   return text;
-                                               })
-                                               .map(jsonBody -> {
-                                                   return Mapper.object(jsonBody, ErrorBody.class);
-                                               })
-                                               .filter(Objects::nonNull)
-                                               .findFirst()
-                                               .orElse(errorBody);
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .map(error -> {
+                                String text = error.getErrorMessage()
+                                        .replaceAll("\\\\\"", "\"");
+                                // if it's not JSON in the error-message, make one up
+                                if (!text.startsWith("{")) {
+                                    ErrorBody tmpErrorBody = new ErrorBody();
+                                    tmpErrorBody.setStatus(volleyError.networkResponse.statusCode);
+                                    tmpErrorBody.setError(text);
+                                    text = Mapper.string(tmpErrorBody);
+                                }
+                                return text;
+                            })
+                            .map(jsonBody -> {
+                                return Mapper.object(jsonBody, ErrorBody.class);
+                            })
+                            .filter(Objects::nonNull)
+                            .findFirst()
+                            .orElse(errorBody);
                 }
             }
         }
@@ -146,24 +149,30 @@ public class Tools {
             stringBuilder.append(
                     String.format(context.getString(R.string.error_alert_line_status), errorBody.getStatus()));
         }
-        if (errorBody.getPath() != null) {
-            stringBuilder.append("\n");
-            stringBuilder.append(String.format(context.getString(R.string.error_alert_line_path), errorBody.getPath()));
-        }
         if (errorBody.getError() != null) {
-            stringBuilder.append("\n");
+            stringBuilder.append((stringBuilder.length() > 0) ? "\n" : "");
             stringBuilder.append(
                     String.format(context.getString(R.string.error_alert_line_error), errorBody.getError()));
         }
-        if (errorBody.getMessage() != null) {
-            stringBuilder.append("\n");
-            stringBuilder.append(
-                    String.format(context.getString(R.string.error_alert_line_message), errorBody.getMessage()));
-        }
-        if (errorBody.getTimestamp() != null) {
-            stringBuilder.append("\n");
-            stringBuilder.append(
-                    String.format(context.getString(R.string.error_alert_line_timestamp), errorBody.getTimestamp()));
+        if (errorBody.getAdditionalProperties() != null && errorBody.getAdditionalProperties()
+                .size() > 0) {
+            Object errorObject = errorBody.getAdditionalProperties()
+                    .get("errors");
+            if (errorObject != null && errorObject instanceof ArrayList) {
+                List<HashMap<String, String>> errorList = (List) errorObject;
+                HashMap<String, String> errorMap = errorList.get(0);
+                errorMap.forEach((key, value) -> {
+                    stringBuilder.append((stringBuilder.length() > 0) ? "\n" : "");
+                    stringBuilder.append(key + " : " + value);
+                });
+            } else {
+                errorBody.getAdditionalProperties()
+                        .forEach((key, value) -> {
+                            stringBuilder.append((stringBuilder.length() > 0) ? "\n" : "");
+                            stringBuilder.append(key + " : " + value);
+
+                        });
+            }
         }
 
         AlertDialog.Builder alert = new AlertDialog.Builder(context);

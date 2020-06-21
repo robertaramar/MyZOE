@@ -1,5 +1,10 @@
 # Changelog
 
+#### v.0.2.4
+
+ * Fixed a bug when cockpit call had no permission
+ * Retrieving cockpit is now a setting to avoid erroneous calls
+
 #### v0.2.3
 
  * Decoupled battery and cockpit from summary
